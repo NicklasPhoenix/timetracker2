@@ -465,13 +465,21 @@ export class AchievementSystem {
     }
 
     saveProgress() {
-        this.stateManager.setState('achievements', this.achievements);
-        this.stateManager.setState('achievementStats', this.trackedStats);
+        this.stateManager.updateState({
+            achievements: this.achievements,
+            achievementStats: this.trackedStats
+        });
     }
 
     loadProgress() {
-        const savedAchievements = this.stateManager.getState('achievements');
-        const savedStats = this.stateManager.getState('achievementStats');
+        const state = this.stateManager.getState();
+        const savedAchievements = state.achievements;
+        const savedStats = state.achievementStats;
+
+    loadProgress() {
+        const state = this.stateManager.getState();
+        const savedAchievements = state.achievements;
+        const savedStats = state.achievementStats;
 
         if (savedAchievements) {
             // Merge saved achievements with current definitions (in case new achievements were added)
@@ -491,3 +499,5 @@ export class AchievementSystem {
         this.checkAchievements();
     }
 }
+
+export { AchievementSystem };

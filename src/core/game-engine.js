@@ -15,8 +15,8 @@ import { EnemyDatabase } from '../progression/enemy-database.js';
 import { PrestigeManager } from '../progression/prestige-manager.js';
 import DailyChallenges from '../progression/daily-challenges.js';
 import DailyChallengesUI from '../ui/daily-challenges-ui.js';
-import { AchievementSystem } from '../progression/achievement-system.js';
-import { AchievementUI } from '../ui/achievement-ui.js';
+import { AchievementSystem } from '../progression/achievement-system-test.js';
+import { AchievementUI } from '../ui/achievement-ui-test.js';
 
 class GameEngine {
     constructor() {

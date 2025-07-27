@@ -306,3 +306,5 @@ export class AchievementUI {
         this.renderAchievements();
     }
 }
+
+export { AchievementUI };
