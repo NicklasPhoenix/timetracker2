@@ -13,6 +13,8 @@ import { EquipmentManager } from '../progression/equipment-manager.js';
 import { StageManager } from '../progression/stage-manager.js';
 import { EnemyDatabase } from '../progression/enemy-database.js';
 import { PrestigeManager } from '../progression/prestige-manager.js';
+import DailyChallenges from '../progression/daily-challenges.js';
+import DailyChallengesUI from '../ui/daily-challenges-ui.js';
 
 class GameEngine {
     constructor() {
@@ -41,6 +43,9 @@ class GameEngine {
         this.inventoryManager = new InventoryManager(this.stateManager, this.eventSystem);
         this.equipmentManager = new EquipmentManager(this.stateManager, this.eventSystem);
         this.craftingSystem = new CraftingSystem(this.stateManager, this.eventSystem, this.materialManager, this.inventoryManager);
+        
+        // Daily challenges system
+        this.dailyChallenges = new DailyChallenges(this.stateManager, this.eventSystem);
         
         // Performance monitoring
         this.fpsUpdateTime = 0;
@@ -98,6 +103,12 @@ class GameEngine {
             if (data.buttonId === 'prestige-reset-btn') {
                 this.performPrestige();
             }
+            if (data.buttonId === 'challenges-btn') {
+                this.showChallengesUI();
+            }
+            if (data.buttonId === 'close-challenges-btn') {
+                this.hideChallengesUI();
+            }
         });
         
         // Listen for recipe unlocks
@@ -143,6 +154,9 @@ class GameEngine {
         });
         
         this.start();
+        
+        // Initialize UI components
+        this.dailyChallengesUI = new DailyChallengesUI(this.dailyChallenges, this.eventSystem);
         
         console.log('🎮 Game Engine initialized');
     }
@@ -246,6 +260,9 @@ class GameEngine {
         
         this.stateManager.setState(initialState);
         this.updateUI();
+        
+        // Emit stateLoaded event for subsystems
+        this.eventSystem.emit('stateLoaded');
         
         // Check for recipe unlocks after state is loaded
         setTimeout(() => {
@@ -1317,6 +1334,40 @@ class GameEngine {
             
             console.log('🌟 Prestige performed successfully!');
         }
+    }
+    
+    /**
+     * Show daily challenges UI
+     */
+    showChallengesUI() {
+        // The UI is handled by DailyChallengesUI class
+        if (this.dailyChallengesUI) {
+            this.dailyChallengesUI.showChallengesUI();
+        }
+        
+        const gameControls = document.getElementById('game-controls');
+        if (gameControls) {
+            gameControls.style.display = 'none';
+        }
+        
+        console.log('📅 Opened challenges UI');
+    }
+    
+    /**
+     * Hide daily challenges UI
+     */
+    hideChallengesUI() {
+        // The UI is handled by DailyChallengesUI class
+        if (this.dailyChallengesUI) {
+            this.dailyChallengesUI.hideChallengesUI();
+        }
+        
+        const gameControls = document.getElementById('game-controls');
+        if (gameControls) {
+            gameControls.style.display = 'block';
+        }
+        
+        console.log('❌ Closed challenges UI');
     }
 }
 
