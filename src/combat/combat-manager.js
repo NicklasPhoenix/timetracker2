@@ -50,6 +50,42 @@ class CombatManager {
     }
     
     /**
+     * Get effective player stats including equipment and prestige bonuses
+     * @returns {Object} Effective player stats
+     */
+    getEffectivePlayerStats() {
+        const basePlayer = this.stateManager.getStateValue('player');
+        
+        // Get prestige bonuses if available
+        let prestigeBonuses = {
+            damageMultiplier: 1,
+            healthMultiplier: 1,
+            defenseMultiplier: 1,
+            criticalChanceBonus: 0
+        };
+        
+        const state = this.stateManager.getState();
+        if (state.prestige && state.prestige.upgrades) {
+            const upgrades = state.prestige.upgrades;
+            prestigeBonuses = {
+                damageMultiplier: 1 + (upgrades.combatDamage || 0) * 0.1,
+                healthMultiplier: 1 + (upgrades.healthBoost || 0) * 0.15,
+                defenseMultiplier: 1 + (upgrades.defenseBoost || 0) * 0.1,
+                criticalChanceBonus: (upgrades.criticalChance || 0) * 0.05
+            };
+        }
+        
+        // Apply prestige bonuses
+        return {
+            ...basePlayer,
+            attack: Math.floor(basePlayer.attack * prestigeBonuses.damageMultiplier),
+            defense: Math.floor(basePlayer.defense * prestigeBonuses.defenseMultiplier),
+            maxHp: Math.floor(basePlayer.maxHp * prestigeBonuses.healthMultiplier),
+            criticalChance: prestigeBonuses.criticalChanceBonus
+        };
+    }
+    
+    /**
      * Start a new combat encounter
      * @param {Object} enemy - Enemy data (optional, uses default if not provided)
      */
@@ -187,8 +223,8 @@ class CombatManager {
     playerAttack() {
         if (!this.isInCombat || this.combatPhase !== this.COMBAT_PHASES.ACTION) return;
         
-        const player = this.stateManager.getStateValue('player');
-        const damage = this.calculateDamage(player.attack, this.currentEnemy.defense);
+        const effectivePlayer = this.getEffectivePlayerStats();
+        const damage = this.calculateDamage(effectivePlayer.attack, this.currentEnemy.defense, effectivePlayer.criticalChance);
         
         // Apply damage to enemy
         this.currentEnemy.hp = Math.max(0, this.currentEnemy.hp - damage);
@@ -240,10 +276,10 @@ class CombatManager {
     enemyAttack() {
         if (!this.isInCombat) return;
         
-        const player = this.stateManager.getStateValue('player');
+        const effectivePlayer = this.getEffectivePlayerStats();
         const combatState = this.stateManager.getStateValue('combat');
         
-        let damage = this.calculateDamage(this.currentEnemy.attack, player.defense);
+        let damage = this.calculateDamage(this.currentEnemy.attack, effectivePlayer.defense);
         
         // Reduce damage if player is defending
         if (combatState && combatState.playerDefending) {
@@ -254,7 +290,8 @@ class CombatManager {
         }
         
         // Apply damage to player
-        const newHp = Math.max(0, player.hp - damage);
+        const basePlayer = this.stateManager.getStateValue('player');
+        const newHp = Math.max(0, basePlayer.hp - damage);
         this.stateManager.updateState({
             player: { hp: newHp }
         });
@@ -285,15 +322,24 @@ class CombatManager {
      * Calculate damage based on attack and defense
      * @param {number} attack - Attack value
      * @param {number} defense - Defense value
+     * @param {number} criticalChance - Critical hit chance (0.0 to 1.0)
      * @returns {number} Calculated damage
      */
-    calculateDamage(attack, defense) {
+    calculateDamage(attack, defense, criticalChance = 0) {
         // Basic damage formula: attack - defense/2 + random variance
         const baseDamage = Math.max(1, attack - Math.floor(defense / 2));
         const variance = Math.floor(baseDamage * 0.2); // 20% variance
         const randomVariance = Math.floor(Math.random() * (variance * 2 + 1)) - variance;
         
-        return Math.max(1, baseDamage + randomVariance);
+        let finalDamage = Math.max(1, baseDamage + randomVariance);
+        
+        // Check for critical hit
+        if (criticalChance > 0 && Math.random() < criticalChance) {
+            finalDamage = Math.floor(finalDamage * 2); // Critical hits do 2x damage
+            console.log('💥 Critical hit!');
+        }
+        
+        return finalDamage;
     }
     
     /**

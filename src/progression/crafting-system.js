@@ -356,6 +356,11 @@ export class CraftingSystem {
             // Track crafted items for unlock requirements
             this.trackCraftedItem(recipeId, successfulCrafts);
             
+            // Update prestige progress for equipment crafting
+            for (let i = 0; i < successfulCrafts; i++) {
+                this.eventSystem.emit('equipment_crafted');
+            }
+            
             console.log(`✅ Successfully crafted ${successfulCrafts}x ${recipe.name}`);
         }
         

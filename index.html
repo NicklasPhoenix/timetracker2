@@ -53,10 +53,39 @@
                 </div>
                 <button id="close-stages-btn">Close</button>
             </div>
+            <div id="prestige-ui" style="display: none;">
+                <h3>🌟 Prestige System</h3>
+                <div id="prestige-info">
+                    <div id="prestige-stats">
+                        <div>Prestige Level: <span id="prestige-level">0</span></div>
+                        <div>Available Points: <span id="prestige-points">0</span></div>
+                        <div>Run #<span id="run-number">1</span></div>
+                        <div>Total Resets: <span id="total-resets">0</span></div>
+                    </div>
+                    <div id="prestige-progress">
+                        <h4>Current Run Progress</h4>
+                        <div>Max Stage: <span id="max-stage-reached">1</span></div>
+                        <div>Combat Wins: <span id="total-combat-wins">0</span></div>
+                        <div>Materials: <span id="total-materials">0</span></div>
+                        <div>Equipment Crafted: <span id="total-equipment">0</span></div>
+                    </div>
+                </div>
+                <div id="prestige-reset-section">
+                    <h4>Reset for Prestige</h4>
+                    <div>Available Points: <span id="available-prestige-points">0</span></div>
+                    <button id="prestige-reset-btn" disabled>Reset & Gain Points</button>
+                </div>
+                <div id="prestige-upgrades">
+                    <h4>Prestige Upgrades</h4>
+                    <div id="upgrade-list"></div>
+                </div>
+                <button id="close-prestige-btn">Close</button>
+            </div>
             <div id="game-controls">
                 <button id="crafting-btn" style="margin-top: 10px;">Crafting</button>
                 <button id="equipment-btn" style="margin-top: 5px;">Equipment</button>
                 <button id="stages-btn" style="margin-top: 5px;">Stages</button>
+                <button id="prestige-btn" style="margin-top: 5px;">🌟 Prestige</button>
             </div>
         </div>
     </div>

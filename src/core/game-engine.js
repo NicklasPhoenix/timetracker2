@@ -12,6 +12,7 @@ import { CraftingSystem } from '../progression/crafting-system.js';
 import { EquipmentManager } from '../progression/equipment-manager.js';
 import { StageManager } from '../progression/stage-manager.js';
 import { EnemyDatabase } from '../progression/enemy-database.js';
+import { PrestigeManager } from '../progression/prestige-manager.js';
 
 class GameEngine {
     constructor() {
@@ -26,6 +27,9 @@ class GameEngine {
         // Core systems
         this.stateManager = new StateManager();
         this.eventSystem = new EventSystem();
+        
+        // Prestige system
+        this.prestigeManager = new PrestigeManager(this.stateManager, this.eventSystem);
         
         // Stage and enemy systems
         this.enemyDatabase = new EnemyDatabase();
@@ -84,6 +88,15 @@ class GameEngine {
             }
             if (data.buttonId === 'close-stages-btn') {
                 this.hideStagesUI();
+            }
+            if (data.buttonId === 'prestige-btn') {
+                this.showPrestigeUI();
+            }
+            if (data.buttonId === 'close-prestige-btn') {
+                this.hidePrestigeUI();
+            }
+            if (data.buttonId === 'prestige-reset-btn') {
+                this.performPrestige();
             }
         });
         
@@ -208,14 +221,17 @@ class GameEngine {
      * Load initial game state
      */
     loadInitialState() {
+        // Get prestige bonuses (if any exist)
+        const bonuses = this.prestigeManager.getPrestigeBonuses();
+        
         const initialState = {
             player: {
-                hp: 100,
-                maxHp: 100,
+                hp: Math.floor(100 * bonuses.healthMultiplier),
+                maxHp: Math.floor(100 * bonuses.healthMultiplier),
                 level: 1,
                 exp: 0,
-                attack: 10,
-                defense: 5
+                attack: Math.floor(10 * bonuses.damageMultiplier),
+                defense: Math.floor(5 * bonuses.defenseMultiplier)
             },
             game: {
                 currentStage: 1,
@@ -1120,6 +1136,187 @@ class GameEngine {
         }, 3000);
         
         console.log(`🔓 Recipe unlocked: ${recipeName}`);
+    }
+    
+    /**
+     * Show prestige UI
+     */
+    showPrestigeUI() {
+        const prestigeUI = document.getElementById('prestige-ui');
+        const gameControls = document.getElementById('game-controls');
+        
+        if (prestigeUI) {
+            prestigeUI.style.display = 'block';
+            this.updatePrestigeDisplay();
+        }
+        
+        if (gameControls) {
+            gameControls.style.display = 'none';
+        }
+        
+        console.log('🌟 Opened prestige UI');
+    }
+    
+    /**
+     * Hide prestige UI
+     */
+    hidePrestigeUI() {
+        const prestigeUI = document.getElementById('prestige-ui');
+        const gameControls = document.getElementById('game-controls');
+        
+        if (prestigeUI) {
+            prestigeUI.style.display = 'none';
+        }
+        
+        if (gameControls) {
+            gameControls.style.display = 'block';
+        }
+        
+        console.log('❌ Closed prestige UI');
+    }
+    
+    /**
+     * Update prestige display
+     */
+    updatePrestigeDisplay() {
+        const stats = this.prestigeManager.getPrestigeStats();
+        
+        // Update prestige stats
+        document.getElementById('prestige-level').textContent = stats.level;
+        document.getElementById('prestige-points').textContent = stats.points;
+        document.getElementById('run-number').textContent = stats.runNumber;
+        document.getElementById('total-resets').textContent = stats.totalResets;
+        
+        // Update current run progress
+        document.getElementById('max-stage-reached').textContent = stats.currentRunProgress.maxStageReached || 1;
+        document.getElementById('total-combat-wins').textContent = stats.currentRunProgress.totalCombatWins || 0;
+        document.getElementById('total-materials').textContent = stats.currentRunProgress.totalMaterialsCollected || 0;
+        document.getElementById('total-equipment').textContent = stats.currentRunProgress.totalEquipmentCrafted || 0;
+        
+        // Update prestige reset section
+        document.getElementById('available-prestige-points').textContent = stats.availablePrestigePoints;
+        const resetBtn = document.getElementById('prestige-reset-btn');
+        resetBtn.disabled = !stats.canPrestige;
+        resetBtn.textContent = stats.canPrestige ? 
+            `Reset & Gain ${stats.availablePrestigePoints} Points` : 
+            'Not Available Yet (Need 100+ Progress)';
+        
+        // Update upgrades list
+        this.updatePrestigeUpgrades(stats);
+    }
+    
+    /**
+     * Update prestige upgrades display
+     * @param {Object} stats - Prestige statistics
+     */
+    updatePrestigeUpgrades(stats) {
+        const upgradeList = document.getElementById('upgrade-list');
+        if (!upgradeList) return;
+        
+        const state = this.stateManager.getState();
+        const prestige = state.prestige || {};
+        const upgrades = prestige.upgrades || {};
+        const availableUpgrades = prestige.availableUpgrades || [];
+        
+        upgradeList.innerHTML = '';
+        
+        const upgradeDescriptions = {
+            'combatDamage': 'Combat Damage: +10% attack damage per level',
+            'healthBoost': 'Health Boost: +15% max HP per level',
+            'materialDrops': 'Material Drops: +20% material drop rate per level',
+            'craftingSpeed': 'Crafting Speed: +10% faster crafting per level',
+            'experienceGain': 'Experience Gain: +25% EXP gain per level',
+            'criticalChance': 'Critical Chance: +5% critical hit chance per level',
+            'defenseBoost': 'Defense Boost: +10% defense per level',
+            'luckBonus': 'Luck Bonus: +10% rare material chance per level'
+        };
+        
+        availableUpgrades.forEach(upgradeType => {
+            const currentLevel = upgrades[upgradeType] || 0;
+            const cost = this.prestigeManager.getUpgradeCost(upgradeType, currentLevel);
+            const canAfford = stats.points >= cost;
+            
+            const upgradeElement = document.createElement('div');
+            upgradeElement.className = 'prestige-upgrade';
+            upgradeElement.style.cssText = `
+                border: 1px solid ${canAfford ? '#51cf66' : '#666'};
+                margin: 5px 0;
+                padding: 10px;
+                background: #222;
+                opacity: ${canAfford ? '1' : '0.6'};
+            `;
+            
+            upgradeElement.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>${upgradeDescriptions[upgradeType]}</strong><br>
+                        <small>Current Level: ${currentLevel}</small><br>
+                        <small>Cost: ${cost} prestige points</small>
+                    </div>
+                    <button onclick="window.gameEngine.prestigeManager.purchaseUpgrade('${upgradeType}'); window.gameEngine.updatePrestigeDisplay();" 
+                            ${canAfford ? '' : 'disabled'}
+                            style="background: ${canAfford ? '#51cf66' : '#666'}; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: ${canAfford ? 'pointer' : 'not-allowed'};">
+                        ${canAfford ? 'Purchase' : 'Not Affordable'}
+                    </button>
+                </div>
+            `;
+            
+            upgradeList.appendChild(upgradeElement);
+        });
+        
+        if (availableUpgrades.length === 0) {
+            upgradeList.innerHTML = '<p style="color: #666;">Reach prestige level 1 to unlock upgrades!</p>';
+        }
+    }
+    
+    /**
+     * Perform prestige reset
+     */
+    performPrestige() {
+        if (this.prestigeManager.performPrestige()) {
+            // Show prestige success feedback
+            const feedback = document.createElement('div');
+            feedback.className = 'prestige-feedback';
+            feedback.style.cssText = `
+                position: fixed;
+                top: 25%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                color: #ffd43b;
+                padding: 20px;
+                border: 2px solid #ffd43b;
+                border-radius: 10px;
+                font-size: 20px;
+                font-weight: bold;
+                text-align: center;
+                box-shadow: 0 0 20px rgba(255, 212, 59, 0.5);
+                pointer-events: none;
+                z-index: 1000;
+                animation: prestigeFeedback 4s ease-out forwards;
+            `;
+            
+            feedback.innerHTML = `
+                <div style="font-size: 30px; margin-bottom: 10px;">🌟 PRESTIGE! 🌟</div>
+                <div>You have reset your progress and gained permanent bonuses!</div>
+                <div style="color: #ccc; margin-top: 10px; font-size: 16px;">Your new journey begins...</div>
+            `;
+            
+            document.body.appendChild(feedback);
+            
+            setTimeout(() => {
+                if (feedback.parentNode) {
+                    feedback.parentNode.removeChild(feedback);
+                }
+            }, 4000);
+            
+            // Hide prestige UI and update everything
+            this.hidePrestigeUI();
+            this.updateUI();
+            this.updateStageDisplay();
+            
+            console.log('🌟 Prestige performed successfully!');
+        }
     }
 }
 

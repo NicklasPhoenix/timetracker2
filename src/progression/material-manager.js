@@ -189,7 +189,13 @@ export class MaterialManager {
         
         // Apply stage multiplier if available
         const stageMultiplier = this.stageManager ? this.stageManager.getStageMaterialMultiplier() : 1.0;
-        const adjustedDropCount = Math.ceil(baseDropCount * stageMultiplier);
+        
+        // Apply prestige material drop multiplier
+        const state = this.stateManager.getState();
+        const prestigeMultiplier = 1 + ((state.prestige?.upgrades?.materialDrops || 0) * 0.2);
+        
+        const totalMultiplier = stageMultiplier * prestigeMultiplier;
+        const adjustedDropCount = Math.ceil(baseDropCount * totalMultiplier);
         
         for (let i = 0; i < adjustedDropCount; i++) {
             const rarity = this.rollMaterialRarity();
@@ -212,7 +218,27 @@ export class MaterialManager {
         const roll = Math.random();
         let cumulative = 0;
         
-        for (const [rarity, rate] of Object.entries(this.RARITY_DROP_RATES)) {
+        // Get prestige bonuses for luck
+        const state = this.stateManager.getState();
+        const luckBonus = (state.prestige?.upgrades?.luckBonus || 0) * 0.1;
+        
+        // Apply luck bonus to higher rarity chances
+        const modifiedRates = {
+            common: this.RARITY_DROP_RATES.common,
+            uncommon: this.RARITY_DROP_RATES.uncommon,
+            rare: this.RARITY_DROP_RATES.rare + luckBonus * 0.3,
+            epic: this.RARITY_DROP_RATES.epic + luckBonus * 0.2,
+            legendary: this.RARITY_DROP_RATES.legendary + luckBonus * 0.1
+        };
+        
+        // Normalize rates to ensure they add up to 1.0
+        const totalRate = Object.values(modifiedRates).reduce((sum, rate) => sum + rate, 0);
+        if (totalRate > 1.0) {
+            const excess = totalRate - 1.0;
+            modifiedRates.common = Math.max(0.1, modifiedRates.common - excess);
+        }
+        
+        for (const [rarity, rate] of Object.entries(modifiedRates)) {
             cumulative += rate;
             if (roll <= cumulative) {
                 return rarity;
@@ -275,6 +301,9 @@ export class MaterialManager {
         materials[materialId] += quantity;
         
         this.stateManager.updateState({ materials });
+        
+        // Update prestige progress (if prestige system exists)
+        this.eventSystem.emit('material_collected_progress', { quantity });
         
         console.log(`Added ${quantity}x ${materialId} (Total: ${materials[materialId]})`);
     }
