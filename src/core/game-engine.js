@@ -17,6 +17,8 @@ import DailyChallenges from '../progression/daily-challenges.js';
 import DailyChallengesUI from '../ui/daily-challenges-ui.js';
 import { AchievementSystem } from '../progression/achievement-system-test.js';
 import { AchievementUI } from '../ui/achievement-ui-test.js';
+import BossManager from '../progression/boss-manager.js';
+import BossUI from '../ui/boss-ui.js';
 
 class GameEngine {
     constructor() {
@@ -48,6 +50,10 @@ class GameEngine {
         
         // Daily challenges system
         this.dailyChallenges = new DailyChallenges(this.stateManager, this.eventSystem);
+        
+        // Boss system
+        this.bossManager = new BossManager(this.stateManager);
+        this.bossManager.setEventEmitter(this.eventSystem);
         
         // Achievement system
         this.achievementSystem = new AchievementSystem(this.eventSystem, this.stateManager);
@@ -163,6 +169,7 @@ class GameEngine {
         
         // Initialize UI components
         this.dailyChallengesUI = new DailyChallengesUI(this.dailyChallenges, this.eventSystem);
+        this.bossUI = new BossUI(this.bossManager, this.eventSystem, this.stageManager);
         
         // Load achievement progress
         this.achievementSystem.loadProgress();
