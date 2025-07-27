@@ -5,6 +5,7 @@
 
 import { StateManager } from './state-manager.js';
 import { EventSystem } from './event-system.js';
+import { CombatManager } from '../combat/combat-manager.js';
 
 class GameEngine {
     constructor() {
@@ -19,6 +20,7 @@ class GameEngine {
         // Core systems
         this.stateManager = new StateManager();
         this.eventSystem = new EventSystem();
+        this.combatManager = new CombatManager(this.stateManager, this.eventSystem);
         
         // Performance monitoring
         this.fpsUpdateTime = 0;
@@ -36,6 +38,11 @@ class GameEngine {
         this.setupCanvas();
         this.setupEventListeners();
         this.loadInitialState();
+        
+        // Subscribe to state changes for UI updates
+        this.stateManager.subscribe('player.hp', () => this.updateUI());
+        this.stateManager.subscribe('player.level', () => this.updateUI());
+        
         this.start();
         
         console.log('🎮 Game Engine initialized');
@@ -93,6 +100,9 @@ class GameEngine {
         // Canvas input events
         this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
         this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e));
+        
+        // UI button events
+        document.addEventListener('click', (e) => this.handleButtonClick(e));
         
         // Keyboard events
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
@@ -269,16 +279,40 @@ class GameEngine {
         const centerX = this.canvas.width / 2;
         const centerY = this.canvas.height / 2;
         
-        // Draw game title
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = '32px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText('Incremental Combat Game', centerX, centerY - 40);
+        const state = this.stateManager.getState();
         
-        // Draw loading message
-        this.ctx.font = '16px Arial';
-        this.ctx.fillStyle = '#888888';
-        this.ctx.fillText('Engine initialized - Ready for development', centerX, centerY + 20);
+        if (state.game && state.game.isInCombat) {
+            // Combat mode rendering
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = '24px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('⚔️ COMBAT ⚔️', centerX, centerY - 60);
+            
+            // Draw enemy info
+            if (state.combat && state.combat.enemy) {
+                const enemy = state.combat.enemy;
+                this.ctx.font = '18px Arial';
+                this.ctx.fillStyle = '#ff6b6b';
+                this.ctx.fillText(enemy.name, centerX, centerY - 20);
+                this.ctx.fillText(`HP: ${enemy.hp}/${enemy.maxHp}`, centerX, centerY + 10);
+            }
+            
+            // Draw combat instructions
+            this.ctx.font = '14px Arial';
+            this.ctx.fillStyle = '#888888';
+            this.ctx.fillText('Use the buttons below to fight!', centerX, centerY + 50);
+        } else {
+            // Exploration mode rendering
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = '32px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('Incremental Combat Game', centerX, centerY - 40);
+            
+            // Draw loading message
+            this.ctx.font = '16px Arial';
+            this.ctx.fillStyle = '#888888';
+            this.ctx.fillText('Click anywhere to start combat!', centerX, centerY + 20);
+        }
         
         // Draw FPS
         this.ctx.fillStyle = '#00ff00';
@@ -294,8 +328,26 @@ class GameEngine {
         const state = this.stateManager.getState();
         
         // Update player stats
-        document.getElementById('player-hp').textContent = state.player.hp;
-        document.getElementById('player-level').textContent = state.player.level;
+        const playerHpElement = document.getElementById('player-hp');
+        const playerLevelElement = document.getElementById('player-level');
+        
+        if (playerHpElement && state.player) {
+            playerHpElement.textContent = state.player.hp;
+            
+            // Color code HP based on percentage
+            const hpPercent = state.player.hp / state.player.maxHp;
+            if (hpPercent <= 0.25) {
+                playerHpElement.style.color = '#ff6b6b'; // Red for low HP
+            } else if (hpPercent <= 0.5) {
+                playerHpElement.style.color = '#ffd43b'; // Yellow for medium HP
+            } else {
+                playerHpElement.style.color = '#51cf66'; // Green for high HP
+            }
+        }
+        
+        if (playerLevelElement && state.player) {
+            playerLevelElement.textContent = state.player.level;
+        }
     }
     
     /**
@@ -366,6 +418,19 @@ class GameEngine {
      */
     handleKeyUp(event) {
         this.eventSystem.emit('key_up', { key: event.key, code: event.code });
+    }
+    
+    /**
+     * Handle button click events
+     * @param {MouseEvent} event - Mouse event
+     */
+    handleButtonClick(event) {
+        if (event.target.tagName === 'BUTTON') {
+            this.eventSystem.emit('button_click', {
+                buttonId: event.target.id,
+                buttonText: event.target.textContent
+            });
+        }
     }
 }
 
