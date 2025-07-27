@@ -8,6 +8,8 @@ import { EventSystem } from './event-system.js';
 import { CombatManager } from '../combat/combat-manager.js';
 import { MaterialManager } from '../progression/material-manager.js';
 import { InventoryManager } from '../progression/inventory-manager.js';
+import { CraftingSystem } from '../progression/crafting-system.js';
+import { EquipmentManager } from '../progression/equipment-manager.js';
 
 class GameEngine {
     constructor() {
@@ -27,6 +29,8 @@ class GameEngine {
         // Progression systems
         this.materialManager = new MaterialManager(this.stateManager, this.eventSystem);
         this.inventoryManager = new InventoryManager(this.stateManager, this.eventSystem);
+        this.equipmentManager = new EquipmentManager(this.stateManager, this.eventSystem);
+        this.craftingSystem = new CraftingSystem(this.stateManager, this.eventSystem, this.materialManager, this.inventoryManager);
         
         // Performance monitoring
         this.fpsUpdateTime = 0;
@@ -53,6 +57,21 @@ class GameEngine {
         // Listen for material collection events for visual feedback
         this.eventSystem.on('material_collected', (data) => {
             this.showMaterialCollectedFeedback(data);
+        });
+        
+        // Listen for crafting UI events
+        this.eventSystem.on('button_click', (data) => {
+            if (data.buttonId === 'crafting-btn') {
+                this.showCraftingUI();
+            }
+            if (data.buttonId === 'close-crafting-btn') {
+                this.hideCraftingUI();
+            }
+        });
+        
+        // Listen for recipe unlocks
+        this.eventSystem.on('recipe_unlocked', (data) => {
+            this.showRecipeUnlockedFeedback(data);
         });
         
         this.start();
@@ -156,6 +175,11 @@ class GameEngine {
         
         this.stateManager.setState(initialState);
         this.updateUI();
+        
+        // Check for recipe unlocks after state is loaded
+        setTimeout(() => {
+            this.craftingSystem.checkRecipeUnlocks();
+        }, 100);
     }
     
     /**
@@ -502,6 +526,137 @@ class GameEngine {
         }, 2000);
         
         console.log(`✨ Material feedback: +${quantity} ${material.name} (${rarity})`);
+    }
+    
+    /**
+     * Show crafting UI
+     */
+    showCraftingUI() {
+        const craftingUI = document.getElementById('crafting-ui');
+        const gameControls = document.getElementById('game-controls');
+        
+        if (craftingUI) {
+            craftingUI.style.display = 'block';
+            this.updateCraftingRecipeList();
+        }
+        
+        if (gameControls) {
+            gameControls.style.display = 'none';
+        }
+        
+        console.log('🔨 Opened crafting UI');
+    }
+    
+    /**
+     * Hide crafting UI
+     */
+    hideCraftingUI() {
+        const craftingUI = document.getElementById('crafting-ui');
+        const gameControls = document.getElementById('game-controls');
+        
+        if (craftingUI) {
+            craftingUI.style.display = 'none';
+        }
+        
+        if (gameControls) {
+            gameControls.style.display = 'block';
+        }
+        
+        console.log('❌ Closed crafting UI');
+    }
+    
+    /**
+     * Update crafting recipe list
+     */
+    updateCraftingRecipeList() {
+        const recipeList = document.getElementById('recipe-list');
+        if (!recipeList) return;
+        
+        const unlockedRecipes = this.craftingSystem.getUnlockedRecipes();
+        
+        recipeList.innerHTML = '';
+        
+        if (unlockedRecipes.length === 0) {
+            recipeList.innerHTML = '<p>No recipes available. Keep exploring to unlock more!</p>';
+            return;
+        }
+        
+        unlockedRecipes.forEach(recipe => {
+            const recipeElement = document.createElement('div');
+            recipeElement.className = 'recipe-item';
+            recipeElement.style.cssText = `
+                border: 1px solid #444;
+                margin: 5px 0;
+                padding: 10px;
+                background: #222;
+                cursor: pointer;
+            `;
+            
+            const canCraft = this.craftingSystem.hasRequiredMaterials(recipe.requirements);
+            const materialsList = Object.entries(recipe.requirements)
+                .map(([materialId, amount]) => {
+                    const currentAmount = this.materialManager.getMaterialCount(materialId);
+                    const color = currentAmount >= amount ? '#51cf66' : '#ff6b6b';
+                    const material = this.materialManager.getMaterialDefinition(materialId);
+                    return `<span style="color: ${color}">${material?.name || materialId}: ${currentAmount}/${amount}</span>`;
+                })
+                .join(', ');
+            
+            recipeElement.innerHTML = `
+                <strong>${recipe.name}</strong><br>
+                <small>${recipe.description}</small><br>
+                <small>Materials: ${materialsList}</small><br>
+                <small>Craft Time: ${recipe.craftTime / 1000}s</small>
+            `;
+            
+            if (canCraft) {
+                recipeElement.style.borderColor = '#51cf66';
+                recipeElement.addEventListener('click', () => {
+                    this.craftingSystem.craftItem(recipe.id);
+                    setTimeout(() => this.updateCraftingRecipeList(), 100);
+                });
+            } else {
+                recipeElement.style.borderColor = '#ff6b6b';
+                recipeElement.style.opacity = '0.6';
+            }
+            
+            recipeList.appendChild(recipeElement);
+        });
+    }
+    
+    /**
+     * Show recipe unlocked feedback
+     * @param {Object} data - Recipe unlock data
+     */
+    showRecipeUnlockedFeedback(data) {
+        const { recipeName } = data;
+        
+        const feedback = document.createElement('div');
+        feedback.className = 'recipe-feedback';
+        feedback.style.cssText = `
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffd43b;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+            z-index: 1000;
+            animation: materialFeedback 3s ease-out forwards;
+        `;
+        feedback.textContent = `🔓 New Recipe: ${recipeName}`;
+        
+        document.body.appendChild(feedback);
+        
+        setTimeout(() => {
+            if (feedback.parentNode) {
+                feedback.parentNode.removeChild(feedback);
+            }
+        }, 3000);
+        
+        console.log(`🔓 Recipe unlocked: ${recipeName}`);
     }
 }
 
