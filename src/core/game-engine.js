@@ -169,7 +169,7 @@ class GameEngine {
         
         // Initialize UI components
         this.dailyChallengesUI = new DailyChallengesUI(this.dailyChallenges, this.eventSystem);
-        this.bossUI = new BossUI(this.bossManager, this.eventSystem, this.stageManager);
+        this.bossUI = new BossUI(this.bossManager, this.eventSystem, this.stageManager, this.combatManager);
         
         // Load achievement progress
         this.achievementSystem.loadProgress();

@@ -4,10 +4,11 @@
  */
 
 class BossUI {
-    constructor(bossManager, eventEmitter, stageManager) {
+    constructor(bossManager, eventEmitter, stageManager, combatManager) {
         this.bossManager = bossManager;
         this.eventEmitter = eventEmitter;
         this.stageManager = stageManager;
+        this.combatManager = combatManager;
         this.isUIOpen = false;
         
         this.initializeUI();
@@ -30,15 +31,6 @@ class BossUI {
             <div id="boss-list">
                 <h4>Stage Bosses</h4>
                 <div id="boss-selection"></div>
-            </div>
-            <div id="current-boss-fight" style="display: none;">
-                <h4>Boss Battle</h4>
-                <div id="boss-fight-info"></div>
-                <div id="boss-combat-actions">
-                    <button id="boss-attack-btn">Attack Boss</button>
-                    <button id="boss-defend-btn">Defend</button>
-                    <button id="boss-flee-btn">Flee</button>
-                </div>
             </div>
             <button id="close-boss-btn">Close</button>
         `;
@@ -71,23 +63,6 @@ class BossUI {
         
         if (closeBossBtn) {
             closeBossBtn.addEventListener('click', () => this.closeBossUI());
-        }
-
-        // Boss combat actions
-        const bossAttackBtn = document.getElementById('boss-attack-btn');
-        const bossDefendBtn = document.getElementById('boss-defend-btn');
-        const bossFleeBtn = document.getElementById('boss-flee-btn');
-
-        if (bossAttackBtn) {
-            bossAttackBtn.addEventListener('click', () => this.attackBoss());
-        }
-
-        if (bossDefendBtn) {
-            bossDefendBtn.addEventListener('click', () => this.defendFromBoss());
-        }
-
-        if (bossFleeBtn) {
-            bossFleeBtn.addEventListener('click', () => this.fleeBoss());
         }
 
         // Listen for boss events
@@ -248,161 +223,61 @@ class BossUI {
         const boss = this.bossManager.startBossEncounter(stageId, playerLevel);
         
         if (boss) {
-            this.showBossFight();
+            // Create a boss enemy object that works with the combat manager
+            const bossEnemy = this.createBossEnemyForCombat(boss, stageId);
+            
+            // Close boss UI and start combat with the boss
+            this.closeBossUI();
+            
+            // Start combat using the existing combat manager
+            this.combatManager.startCombat(bossEnemy);
+            
             console.log(`👑 Started boss encounter: ${boss.name}`);
         }
     }
 
-    showBossFight() {
-        const bossInfo = document.getElementById('boss-info');
-        const bossList = document.getElementById('boss-list');
-        const bossFight = document.getElementById('current-boss-fight');
-        
-        if (bossInfo) bossInfo.style.display = 'none';
-        if (bossList) bossList.style.display = 'none';
-        if (bossFight) bossFight.style.display = 'block';
-        
-        this.updateBossFightDisplay();
-    }
-
-    hideBossFight() {
-        const bossInfo = document.getElementById('boss-info');
-        const bossList = document.getElementById('boss-list');
-        const bossFight = document.getElementById('current-boss-fight');
-        
-        if (bossInfo) bossInfo.style.display = 'block';
-        if (bossList) bossList.style.display = 'block';
-        if (bossFight) bossFight.style.display = 'none';
-        
-        this.updateBossDisplay();
-    }
-
-    updateBossFightDisplay() {
-        const fightInfo = document.getElementById('boss-fight-info');
-        if (!fightInfo || !this.bossManager.currentBoss) return;
-
-        const boss = this.bossManager.currentBoss;
-        const hpPercentage = (boss.currentHp / boss.maxHp) * 100;
-        const currentPhase = this.bossManager.bossPhase;
-        const phases = this.bossManager.bosses.get(this.bossManager.getCurrentBossStage()).phases;
-
-        fightInfo.innerHTML = `
-            <div class="boss-fight-header">
-                <h4>${boss.name}</h4>
-                <div class="boss-phase">Phase ${currentPhase + 1}: ${phases[currentPhase].name}</div>
-            </div>
-            <div class="boss-health-bar">
-                <div class="health-bar-bg">
-                    <div class="health-bar-fill boss-health" style="width: ${hpPercentage}%"></div>
-                </div>
-                <div class="health-text">${boss.currentHp} / ${boss.maxHp} HP</div>
-            </div>
-            <div class="boss-abilities">
-                <strong>Current Abilities:</strong> ${boss.abilities.join(', ')}
-            </div>
-        `;
-    }
-
-    attackBoss() {
-        if (!this.bossManager.currentBoss) return;
-
-        // Get player stats
-        const gameState = this.bossManager.stateManager.getState();
-        const player = gameState.player;
-        
-        if (!player) return;
-
-        // Calculate player damage (similar to combat manager)
-        const baseDamage = player.attack || 10;
-        const result = this.bossManager.damageBoss(baseDamage);
-        
-        if (result.defeated) {
-            this.hideBossFight();
-            return;
-        }
-
-        // Boss counter-attack
-        const bossAction = this.bossManager.getBossAction();
-        const playerDamage = Math.max(1, bossAction.damage - (player.defense || 5));
-        
-        // Apply damage to player
-        const newHp = Math.max(0, player.hp - playerDamage);
-        this.bossManager.stateManager.setState({
-            player: { ...player, hp: newHp }
-        });
-
-        this.updateBossFightDisplay();
-        
-        // Check if player died
-        if (newHp <= 0) {
-            alert('You have been defeated by the boss!');
-            this.fleeBoss();
-        }
-
-        console.log(`⚔️ Player dealt ${baseDamage} damage, Boss ${bossAction.description} for ${playerDamage} damage`);
-    }
-
-    defendFromBoss() {
-        if (!this.bossManager.currentBoss) return;
-
-        // Get player stats
-        const gameState = this.bossManager.stateManager.getState();
-        const player = gameState.player;
-        
-        if (!player) return;
-
-        // Boss attack with reduced damage due to defending
-        const bossAction = this.bossManager.getBossAction();
-        const reducedDamage = Math.max(1, Math.floor(bossAction.damage * 0.5) - (player.defense || 5));
-        
-        // Apply reduced damage to player
-        const newHp = Math.max(0, player.hp - reducedDamage);
-        this.bossManager.stateManager.setState({
-            player: { ...player, hp: newHp }
-        });
-
-        this.updateBossFightDisplay();
-        
-        // Check if player died
-        if (newHp <= 0) {
-            alert('You have been defeated by the boss!');
-            this.fleeBoss();
-        }
-
-        console.log(`🛡️ Player defended, Boss ${bossAction.description} for ${reducedDamage} damage (reduced)`);
-    }
-
-    fleeBoss() {
-        this.bossManager.currentBoss = null;
-        this.bossManager.bossPhase = 0;
-        this.hideBossFight();
-        console.log('🏃 Fled from boss encounter');
+    createBossEnemyForCombat(boss, stageId) {
+        // Create an enemy object compatible with the combat manager
+        return {
+            name: boss.name,
+            level: boss.level,
+            hp: boss.currentHp,
+            maxHp: boss.maxHp,
+            damage: boss.damage,
+            defense: boss.defense,
+            isBoss: true,
+            bossId: boss.id,
+            stageId: stageId,
+            phase: 0,
+            abilities: boss.abilities,
+            damageMultiplier: boss.damageMultiplier,
+            description: `Level ${boss.level} Boss`,
+            
+            // Boss-specific properties
+            phases: this.bossManager.bosses.get(stageId).phases,
+            currentPhase: this.bossManager.bossPhase
+        };
     }
 
     onBossEncounterStart(data) {
-        if (this.isUIOpen) {
-            this.showBossFight();
-        }
+        // Boss encounter started, main combat system will handle it
+        this.showNotification(`👑 Boss Battle: ${data.boss.name}!`, 'boss-encounter');
     }
 
     onBossPhaseChange(data) {
-        if (this.isUIOpen) {
-            this.updateBossFightDisplay();
-        }
-        
         // Show phase change notification
-        this.showNotification(`👑 Boss entered ${data.phaseName}!`, 'boss-phase');
+        this.showNotification(`👑 ${data.boss.name} entered ${data.phaseName}!`, 'boss-phase');
     }
 
     onBossDamaged(data) {
-        if (this.isUIOpen) {
-            this.updateBossFightDisplay();
-        }
+        // Boss took damage - no specific UI updates needed as main combat handles it
     }
 
     onBossDefeated(data) {
-        this.showBossVictory(data);
-        this.hideBossFight();
+        // Boss defeated - refresh boss display to show new status
+        if (this.isUIOpen) {
+            this.updateBossDisplay();
+        }
     }
 
     showBossVictory(data) {

@@ -231,8 +231,21 @@ class CombatManager {
         const effectivePlayer = this.getEffectivePlayerStats();
         const damage = this.calculateDamage(effectivePlayer.attack, this.currentEnemy.defense, effectivePlayer.criticalChance);
         
-        // Apply damage to enemy
-        this.currentEnemy.hp = Math.max(0, this.currentEnemy.hp - damage);
+        let combatResult = null;
+        
+        // Handle boss damage differently
+        if (this.currentEnemy.isBoss && window.gameEngine && window.gameEngine.bossManager) {
+            const result = window.gameEngine.bossManager.damageBoss(damage);
+            if (result.defeated) {
+                combatResult = result;
+                this.currentEnemy.hp = 0; // Sync enemy HP for combat manager
+            } else {
+                this.currentEnemy.hp = result.hp || this.currentEnemy.hp - damage;
+            }
+        } else {
+            // Apply damage to regular enemy
+            this.currentEnemy.hp = Math.max(0, this.currentEnemy.hp - damage);
+        }
         
         // Create damage effect
         this.createDamageEffect(damage, 'enemy');
@@ -241,13 +254,18 @@ class CombatManager {
         this.eventSystem.emit('attack', {
             attacker: 'player',
             target: 'enemy',
-            damage: damage
+            damage: damage,
+            isBoss: this.currentEnemy.isBoss || false
         });
         
-        console.log(`⚔️ Player attacks for ${damage} damage! Enemy HP: ${this.currentEnemy.hp}`);
+        console.log(`⚔️ Player attacks for ${damage} damage! ${this.currentEnemy.name} HP: ${this.currentEnemy.hp}`);
         
         // Check if enemy is defeated
         if (this.currentEnemy.hp <= 0) {
+            // Store boss result for victory handling
+            if (combatResult && combatResult.defeated) {
+                this.bossVictoryData = combatResult;
+            }
             this.endCombat('victory');
             return;
         }
@@ -284,7 +302,23 @@ class CombatManager {
         const effectivePlayer = this.getEffectivePlayerStats();
         const combatState = this.stateManager.getStateValue('combat');
         
-        let damage = this.calculateDamage(this.currentEnemy.attack, effectivePlayer.defense);
+        let damage;
+        let attackDescription = 'attacks';
+        
+        // Handle boss attacks differently
+        if (this.currentEnemy.isBoss) {
+            const bossAction = this.getBossAction();
+            damage = bossAction.damage;
+            attackDescription = bossAction.description;
+            
+            // Apply boss damage to boss manager (for phase tracking)
+            if (window.gameEngine && window.gameEngine.bossManager && window.gameEngine.bossManager.currentBoss) {
+                // Update boss phase if needed
+                window.gameEngine.bossManager.updateBossPhase();
+            }
+        } else {
+            damage = this.calculateDamage(this.currentEnemy.attack, effectivePlayer.defense);
+        }
         
         // Reduce damage if player is defending
         if (combatState && combatState.playerDefending) {
@@ -311,10 +345,12 @@ class CombatManager {
         this.eventSystem.emit('attack', {
             attacker: 'enemy',
             target: 'player',
-            damage: damage
+            damage: damage,
+            isBoss: this.currentEnemy.isBoss || false,
+            description: attackDescription
         });
         
-        console.log(`👹 Enemy attacks for ${damage} damage! Player HP: ${newHp}`);
+        console.log(`👹 ${this.currentEnemy.name} ${attackDescription} for ${damage} damage! Player HP: ${newHp}`);
         
         // Check if player is defeated
         if (newHp <= 0) {
@@ -481,31 +517,73 @@ class CombatManager {
      * @param {Object} combatData - Combat data
      */
     handleVictory(combatData) {
-        // Award experience and materials
-        const expGained = combatData.enemy.level * 10;
         const player = this.stateManager.getStateValue('player');
+        let expGained = combatData.enemy.level * 10;
         
+        // Handle boss victory
+        if (combatData.enemy.isBoss && this.bossVictoryData) {
+            const bossRewards = this.bossVictoryData.rewards;
+            
+            // Boss gives more experience
+            expGained = bossRewards.experience;
+            
+            // Award boss materials
+            if (bossRewards.materials && bossRewards.materials.length > 0) {
+                this.eventSystem.emit('boss_materials_gained', {
+                    materials: bossRewards.materials
+                });
+            }
+            
+            // Award boss equipment
+            if (bossRewards.equipment && bossRewards.equipment.length > 0) {
+                this.eventSystem.emit('boss_equipment_gained', {
+                    equipment: bossRewards.equipment
+                });
+            }
+            
+            console.log(`👑 Boss Victory! Gained ${expGained} experience and special rewards!`);
+            
+            // Show boss victory notification
+            if (window.gameEngine && window.gameEngine.bossUI) {
+                window.gameEngine.bossUI.showBossVictory(this.bossVictoryData);
+            }
+            
+            // Clear boss victory data
+            this.bossVictoryData = null;
+        } else {
+            console.log(`🏆 Victory! Gained ${expGained} experience`);
+        }
+        
+        // Award experience
         this.stateManager.updateState({
             player: {
                 exp: player.exp + expGained
             }
         });
         
-        console.log(`🏆 Victory! Gained ${expGained} experience`);
-        
         // Calculate combat metrics for achievements
         const combatTime = (Date.now() - this.combatStartTime) / 1000; // in seconds
         const playerHpRemaining = player.hp;
         const damageTaken = this.combatDamageTaken;
         
-        // Emit combat victory event for material system
-        this.eventSystem.emit('combat_victory', {
+        // Emit combat victory event for material system (for regular enemies)
+        if (!combatData.enemy.isBoss) {
+            this.eventSystem.emit('combat_victory', {
+                enemy: combatData.enemy,
+                expGained: expGained,
+                playerLevel: player.level,
+                combatTime: combatTime,
+                playerHpRemaining: playerHpRemaining,
+                damageTaken: damageTaken
+            });
+        }
+        
+        // Always emit general victory event for achievements
+        this.eventSystem.emit('combatVictory', {
             enemy: combatData.enemy,
             expGained: expGained,
             playerLevel: player.level,
-            combatTime: combatTime,
-            playerHpRemaining: playerHpRemaining,
-            damageTaken: damageTaken
+            isBoss: combatData.enemy.isBoss || false
         });
         
         // Check for level up
@@ -573,6 +651,19 @@ class CombatManager {
             
             console.log(`🌟 Level up! Now level ${newLevel}`);
         }
+    }
+    
+    /**
+     * Get boss action for boss combat
+     * @returns {Object} Boss action with damage and description
+     */
+    getBossAction() {
+        if (!this.currentEnemy.isBoss || !window.gameEngine || !window.gameEngine.bossManager) {
+            return { damage: this.currentEnemy.attack || 10, description: 'attacks' };
+        }
+        
+        // Use the boss manager's AI system
+        return window.gameEngine.bossManager.getBossAction();
     }
 }
 
