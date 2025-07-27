@@ -396,6 +396,13 @@ class CombatManager {
         
         console.log(`🏆 Victory! Gained ${expGained} experience`);
         
+        // Emit combat victory event for material system
+        this.eventSystem.emit('combat_victory', {
+            enemy: combatData.enemy,
+            expGained: expGained,
+            playerLevel: player.level
+        });
+        
         // Check for level up
         this.checkLevelUp();
     }

@@ -85,6 +85,32 @@
     animation: spin 1s ease-in-out infinite;
 }
 
+/* Material collection feedback animation */
+@keyframes materialFeedback {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    25% {
+        transform: translate(-50%, -60%) scale(1.2);
+    }
+    75% {
+        transform: translate(-50%, -80%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -100%) scale(0.8);
+    }
+}
+
+.material-feedback {
+    position: fixed;
+    font-family: 'Arial', sans-serif;
+    pointer-events: none;
+    z-index: 1000;
+    animation: materialFeedback 2s ease-out forwards;
+}
+
 /* Reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
     * {

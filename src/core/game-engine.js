@@ -6,6 +6,8 @@
 import { StateManager } from './state-manager.js';
 import { EventSystem } from './event-system.js';
 import { CombatManager } from '../combat/combat-manager.js';
+import { MaterialManager } from '../progression/material-manager.js';
+import { InventoryManager } from '../progression/inventory-manager.js';
 
 class GameEngine {
     constructor() {
@@ -21,6 +23,10 @@ class GameEngine {
         this.stateManager = new StateManager();
         this.eventSystem = new EventSystem();
         this.combatManager = new CombatManager(this.stateManager, this.eventSystem);
+        
+        // Progression systems
+        this.materialManager = new MaterialManager(this.stateManager, this.eventSystem);
+        this.inventoryManager = new InventoryManager(this.stateManager, this.eventSystem);
         
         // Performance monitoring
         this.fpsUpdateTime = 0;
@@ -42,6 +48,12 @@ class GameEngine {
         // Subscribe to state changes for UI updates
         this.stateManager.subscribe('player.hp', () => this.updateUI());
         this.stateManager.subscribe('player.level', () => this.updateUI());
+        this.stateManager.subscribe('materials', () => this.updateUI());
+        
+        // Listen for material collection events for visual feedback
+        this.eventSystem.on('material_collected', (data) => {
+            this.showMaterialCollectedFeedback(data);
+        });
         
         this.start();
         
@@ -330,6 +342,7 @@ class GameEngine {
         // Update player stats
         const playerHpElement = document.getElementById('player-hp');
         const playerLevelElement = document.getElementById('player-level');
+        const materialCountElement = document.getElementById('material-count');
         
         if (playerHpElement && state.player) {
             playerHpElement.textContent = state.player.hp;
@@ -347,6 +360,24 @@ class GameEngine {
         
         if (playerLevelElement && state.player) {
             playerLevelElement.textContent = state.player.level;
+        }
+        
+        // Update material count
+        if (materialCountElement && state.materials) {
+            const totalMaterials = Object.values(state.materials).reduce((sum, count) => sum + count, 0);
+            materialCountElement.textContent = totalMaterials;
+            
+            // Color code material count
+            if (totalMaterials >= 50) {
+                materialCountElement.style.color = '#51cf66'; // Green for lots of materials
+            } else if (totalMaterials >= 10) {
+                materialCountElement.style.color = '#ffd43b'; // Yellow for some materials
+            } else {
+                materialCountElement.style.color = '#9ca3af'; // Gray for few materials
+            }
+        } else if (materialCountElement) {
+            materialCountElement.textContent = '0';
+            materialCountElement.style.color = '#9ca3af';
         }
     }
     
@@ -431,6 +462,46 @@ class GameEngine {
                 buttonText: event.target.textContent
             });
         }
+    }
+    
+    /**
+     * Show visual feedback for material collection
+     * @param {Object} data - Material collection data
+     */
+    showMaterialCollectedFeedback(data) {
+        const { materialId, quantity, rarity } = data;
+        const material = this.materialManager.getMaterialDefinition(materialId);
+        
+        if (!material) return;
+        
+        // Create floating text effect
+        const feedback = document.createElement('div');
+        feedback.className = 'material-feedback';
+        feedback.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: ${this.materialManager.RARITY_COLORS[rarity]};
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+            z-index: 1000;
+            animation: materialFeedback 2s ease-out forwards;
+        `;
+        feedback.textContent = `+${quantity} ${material.name}`;
+        
+        document.body.appendChild(feedback);
+        
+        // Remove element after animation
+        setTimeout(() => {
+            if (feedback.parentNode) {
+                feedback.parentNode.removeChild(feedback);
+            }
+        }, 2000);
+        
+        console.log(`✨ Material feedback: +${quantity} ${material.name} (${rarity})`);
     }
 }
 
