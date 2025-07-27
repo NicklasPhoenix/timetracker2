@@ -1,17 +1,32 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Timer Widget</title>
-    <link rel="stylesheet" href="timetracker.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incremental Combat Game</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/ui.css">
+    <link rel="stylesheet" href="styles/animations.css">
 </head>
 <body>
-    <div id="timer">
-        <span id="time">00:00:00</span>
-        <button id="start">Play</button>
-        <button id="pause">Pause</button>
-        <button id="stop">Stop</button>
+    <div id="game-container">
+        <canvas id="game-canvas" width="800" height="600"></canvas>
+        <div id="ui-overlay">
+            <div id="hud">
+                <div id="player-stats">
+                    <div id="health-bar">HP: <span id="player-hp">100</span></div>
+                    <div id="level">Level: <span id="player-level">1</span></div>
+                </div>
+                <div id="fps-counter">FPS: <span id="fps">60</span></div>
+            </div>
+            <div id="combat-ui" style="display: none;">
+                <button id="attack-btn">Attack</button>
+                <button id="defend-btn">Defend</button>
+            </div>
+        </div>
     </div>
-    <script src="timetracker.js"></script>
+    
+    <!-- Game scripts -->
+    <script type="module" src="src/core/game-engine.js"></script>
 </body>
 </html>
