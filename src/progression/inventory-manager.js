@@ -67,6 +67,10 @@ export class InventoryManager {
             this.addItem(this.INVENTORY_TYPES.EQUIPMENT, data.equipmentId, 1);
         });
         
+        this.eventSystem.on('inventory_add_equipment', (data) => {
+            this.addEquipment(data.equipment);
+        });
+        
         // Listen for inventory operations
         this.eventSystem.on('inventory_sort', (data) => {
             this.sortInventory(data.inventoryType, data.sortType, data.sortOrder);
@@ -134,6 +138,34 @@ export class InventoryManager {
         });
         
         console.log(`📦 Added ${quantity}x ${itemId} to ${inventoryType} inventory`);
+    }
+    
+    /**
+     * Add equipment directly to inventory
+     * @param {Object} equipment - Equipment instance from equipment manager
+     */
+    addEquipment(equipment) {
+        const currentState = this.stateManager.getState();
+        const inventory = currentState.inventory || {};
+        
+        if (!inventory.equipment) {
+            inventory.equipment = {};
+        }
+        
+        // Store the equipment instance directly using its unique ID
+        inventory.equipment[equipment.uniqueId] = equipment;
+        
+        this.stateManager.updateState({ inventory });
+        
+        // Emit inventory update event
+        this.eventSystem.emit('inventory_updated', {
+            inventoryType: 'equipment',
+            itemId: equipment.id,
+            quantity: 1,
+            operation: 'add'
+        });
+        
+        console.log(`⚔️ Added ${equipment.name} to equipment inventory`);
     }
     
     /**

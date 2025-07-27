@@ -67,11 +67,41 @@ class GameEngine {
             if (data.buttonId === 'close-crafting-btn') {
                 this.hideCraftingUI();
             }
+            if (data.buttonId === 'equipment-btn') {
+                this.showEquipmentUI();
+            }
+            if (data.buttonId === 'close-equipment-btn') {
+                this.hideEquipmentUI();
+            }
         });
         
         // Listen for recipe unlocks
         this.eventSystem.on('recipe_unlocked', (data) => {
             this.showRecipeUnlockedFeedback(data);
+        });
+        
+        // Listen for equipment events
+        this.eventSystem.on('item_equipped', () => {
+            this.updateUI();
+            if (document.getElementById('equipment-ui').style.display !== 'none') {
+                this.updateEquipmentDisplay();
+                this.updateInventoryDisplay();
+            }
+        });
+        
+        this.eventSystem.on('item_unequipped', () => {
+            this.updateUI();
+            if (document.getElementById('equipment-ui').style.display !== 'none') {
+                this.updateEquipmentDisplay();
+                this.updateInventoryDisplay();
+            }
+        });
+        
+        this.eventSystem.on('consumable_used', () => {
+            this.updateUI();
+            if (document.getElementById('equipment-ui').style.display !== 'none') {
+                this.updateInventoryDisplay();
+            }
         });
         
         this.start();
@@ -621,6 +651,194 @@ class GameEngine {
             }
             
             recipeList.appendChild(recipeElement);
+        });
+    }
+    
+    /**
+     * Show equipment UI
+     */
+    showEquipmentUI() {
+        const equipmentUI = document.getElementById('equipment-ui');
+        const gameControls = document.getElementById('game-controls');
+        
+        if (equipmentUI) {
+            equipmentUI.style.display = 'block';
+            this.updateEquipmentDisplay();
+            this.updateInventoryDisplay();
+        }
+        
+        if (gameControls) {
+            gameControls.style.display = 'none';
+        }
+        
+        console.log('⚔️ Opened equipment UI');
+    }
+    
+    /**
+     * Hide equipment UI
+     */
+    hideEquipmentUI() {
+        const equipmentUI = document.getElementById('equipment-ui');
+        const gameControls = document.getElementById('game-controls');
+        
+        if (equipmentUI) {
+            equipmentUI.style.display = 'none';
+        }
+        
+        if (gameControls) {
+            gameControls.style.display = 'block';
+        }
+        
+        console.log('❌ Closed equipment UI');
+    }
+    
+    /**
+     * Update equipment display
+     */
+    updateEquipmentDisplay() {
+        const equippedItemsDiv = document.getElementById('equipped-items');
+        if (!equippedItemsDiv) return;
+        
+        const equippedItems = this.equipmentManager.getEquippedItems();
+        
+        equippedItemsDiv.innerHTML = '';
+        
+        // Show all equipment slots
+        const slots = {
+            main_hand: 'Main Hand',
+            chest: 'Chest',
+            accessory_1: 'Accessory 1',
+            accessory_2: 'Accessory 2'
+        };
+        
+        for (const [slotId, slotName] of Object.entries(slots)) {
+            const slotDiv = document.createElement('div');
+            slotDiv.className = 'equipment-slot';
+            slotDiv.style.cssText = `
+                border: 1px solid #444;
+                margin: 5px 0;
+                padding: 10px;
+                background: #1a1a1a;
+                min-height: 60px;
+            `;
+            
+            const equippedItem = equippedItems[slotId];
+            
+            if (equippedItem && equippedItem.itemData) {
+                const item = equippedItem.itemData;
+                const statsText = Object.entries(item.stats)
+                    .map(([stat, value]) => `${stat}: +${value}`)
+                    .join(', ');
+                
+                slotDiv.innerHTML = `
+                    <strong>${slotName}</strong><br>
+                    <div style="color: #51cf66;">
+                        ${item.name} (${item.quality})<br>
+                        <small>${statsText}</small>
+                    </div>
+                    <button onclick="window.gameEngine.equipmentManager.unequipItem('${slotId}')" 
+                            style="margin-top: 5px; background: #ff6b6b; border: none; padding: 2px 8px; color: white; cursor: pointer;">
+                        Unequip
+                    </button>
+                `;
+            } else {
+                slotDiv.innerHTML = `<strong>${slotName}</strong><br><em style="color: #666;">Empty</em>`;
+            }
+            
+            equippedItemsDiv.appendChild(slotDiv);
+        }
+    }
+    
+    /**
+     * Update inventory display
+     */
+    updateInventoryDisplay() {
+        const inventoryList = document.getElementById('inventory-list');
+        if (!inventoryList) return;
+        
+        const currentState = this.stateManager.getState();
+        const inventory = currentState.inventory || {};
+        const equipment = inventory.equipment || {};
+        
+        inventoryList.innerHTML = '';
+        
+        const unequippedItems = Object.values(equipment).filter(item => !item.equipped);
+        
+        if (unequippedItems.length === 0) {
+            inventoryList.innerHTML = '<p style="color: #666;">No items in inventory</p>';
+            return;
+        }
+        
+        unequippedItems.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'inventory-item';
+            itemDiv.style.cssText = `
+                border: 1px solid #444;
+                margin: 5px 0;
+                padding: 10px;
+                background: #222;
+                cursor: pointer;
+            `;
+            
+            const statsText = Object.entries(item.stats || {})
+                .map(([stat, value]) => `${stat}: +${value}`)
+                .join(', ');
+            
+            const canEquip = this.equipmentManager.meetsRequirements(item);
+            const borderColor = canEquip ? '#51cf66' : '#ff6b6b';
+            
+            itemDiv.style.borderColor = borderColor;
+            
+            itemDiv.innerHTML = `
+                <strong>${item.name} (${item.quality})</strong><br>
+                <small>${item.description}</small><br>
+                <small style="color: #51cf66;">${statsText}</small><br>
+                <small>Value: ${item.value} gold</small>
+            `;
+            
+            if (item.consumable) {
+                // Add use button for consumables
+                const useButton = document.createElement('button');
+                useButton.textContent = 'Use';
+                useButton.style.cssText = `
+                    margin-top: 5px; 
+                    background: #51cf66; 
+                    border: none; 
+                    padding: 4px 12px; 
+                    color: white; 
+                    cursor: pointer;
+                    margin-right: 5px;
+                `;
+                useButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.equipmentManager.useConsumable(item.uniqueId);
+                    this.updateInventoryDisplay();
+                    this.updateUI();
+                });
+                itemDiv.appendChild(useButton);
+            } else if (canEquip && item.slot) {
+                // Add equip button for equipment
+                const equipButton = document.createElement('button');
+                equipButton.textContent = 'Equip';
+                equipButton.style.cssText = `
+                    margin-top: 5px; 
+                    background: #339af0; 
+                    border: none; 
+                    padding: 4px 12px; 
+                    color: white; 
+                    cursor: pointer;
+                `;
+                equipButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.equipmentManager.equipItem(item.uniqueId);
+                    this.updateEquipmentDisplay();
+                    this.updateInventoryDisplay();
+                    this.updateUI();
+                });
+                itemDiv.appendChild(equipButton);
+            }
+            
+            inventoryList.appendChild(itemDiv);
         });
     }
     
