@@ -6,9 +6,11 @@
 import { EventSystem } from '../core/event-system.js';
 
 class CombatManager {
-    constructor(stateManager, eventSystem) {
+    constructor(stateManager, eventSystem, stageManager = null, enemyDatabase = null) {
         this.stateManager = stateManager;
         this.eventSystem = eventSystem;
+        this.stageManager = stageManager;
+        this.enemyDatabase = enemyDatabase;
         
         this.isInCombat = false;
         this.currentEnemy = null;
@@ -57,8 +59,8 @@ class CombatManager {
             return;
         }
         
-        // Create default enemy if none provided
-        this.currentEnemy = enemy || this.createDefaultEnemy();
+        // Create stage-appropriate enemy if none provided
+        this.currentEnemy = enemy || this.createStageEnemy();
         
         this.isInCombat = true;
         this.combatPhase = this.COMBAT_PHASES.PREPARATION;
@@ -295,7 +297,7 @@ class CombatManager {
     }
     
     /**
-     * Create default enemy for testing
+     * Create default enemy for testing or when stage system isn't available
      * @returns {Object} Enemy data
      */
     createDefaultEnemy() {
@@ -308,6 +310,33 @@ class CombatManager {
             level: 1,
             sprite: 'goblin'
         };
+    }
+    
+    /**
+     * Create enemy based on current stage
+     * @returns {Object} Stage-appropriate enemy
+     */
+    createStageEnemy() {
+        if (!this.stageManager || !this.enemyDatabase) {
+            return this.createDefaultEnemy();
+        }
+        
+        try {
+            const enemyConfig = this.stageManager.getStageEnemyConfig();
+            const enemy = this.enemyDatabase.createEnemy(enemyConfig.type, enemyConfig.level);
+            
+            if (enemy) {
+                // Add stage information
+                enemy.stageId = enemyConfig.stage;
+                enemy.stageName = enemyConfig.stageName;
+                console.log(`👹 Created ${enemy.name} (Level ${enemy.level}) from ${enemyConfig.stageName}`);
+                return enemy;
+            }
+        } catch (error) {
+            console.warn('⚠️ Failed to create stage enemy, using default:', error);
+        }
+        
+        return this.createDefaultEnemy();
     }
     
     /**

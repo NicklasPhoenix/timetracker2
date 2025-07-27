@@ -10,6 +10,8 @@ import { MaterialManager } from '../progression/material-manager.js';
 import { InventoryManager } from '../progression/inventory-manager.js';
 import { CraftingSystem } from '../progression/crafting-system.js';
 import { EquipmentManager } from '../progression/equipment-manager.js';
+import { StageManager } from '../progression/stage-manager.js';
+import { EnemyDatabase } from '../progression/enemy-database.js';
 
 class GameEngine {
     constructor() {
@@ -24,10 +26,14 @@ class GameEngine {
         // Core systems
         this.stateManager = new StateManager();
         this.eventSystem = new EventSystem();
-        this.combatManager = new CombatManager(this.stateManager, this.eventSystem);
+        
+        // Stage and enemy systems
+        this.enemyDatabase = new EnemyDatabase();
+        this.stageManager = new StageManager(this.stateManager, this.eventSystem);
+        this.combatManager = new CombatManager(this.stateManager, this.eventSystem, this.stageManager, this.enemyDatabase);
         
         // Progression systems
-        this.materialManager = new MaterialManager(this.stateManager, this.eventSystem);
+        this.materialManager = new MaterialManager(this.stateManager, this.eventSystem, this.stageManager);
         this.inventoryManager = new InventoryManager(this.stateManager, this.eventSystem);
         this.equipmentManager = new EquipmentManager(this.stateManager, this.eventSystem);
         this.craftingSystem = new CraftingSystem(this.stateManager, this.eventSystem, this.materialManager, this.inventoryManager);
@@ -73,6 +79,12 @@ class GameEngine {
             if (data.buttonId === 'close-equipment-btn') {
                 this.hideEquipmentUI();
             }
+            if (data.buttonId === 'stages-btn') {
+                this.showStagesUI();
+            }
+            if (data.buttonId === 'close-stages-btn') {
+                this.hideStagesUI();
+            }
         });
         
         // Listen for recipe unlocks
@@ -87,6 +99,19 @@ class GameEngine {
                 this.updateEquipmentDisplay();
                 this.updateInventoryDisplay();
             }
+        });
+        
+        // Listen for stage events
+        this.eventSystem.on('STAGE_UNLOCKED', (data) => {
+            this.showStageUnlockedFeedback(data);
+        });
+        
+        this.eventSystem.on('STAGE_COMPLETED', (data) => {
+            this.showStageCompletedFeedback(data);
+        });
+        
+        this.eventSystem.on('STAGE_CHANGED', (data) => {
+            this.updateStageDisplay();
         });
         
         this.eventSystem.on('item_unequipped', () => {
@@ -840,6 +865,226 @@ class GameEngine {
             
             inventoryList.appendChild(itemDiv);
         });
+    }
+    
+    /**
+     * Show stages UI
+     */
+    showStagesUI() {
+        const stagesUI = document.getElementById('stages-ui');
+        const gameControls = document.getElementById('game-controls');
+        
+        if (stagesUI) {
+            stagesUI.style.display = 'block';
+            this.updateStageDisplay();
+            this.updateStageList();
+        }
+        
+        if (gameControls) {
+            gameControls.style.display = 'none';
+        }
+        
+        console.log('🗺️ Opened stages UI');
+    }
+    
+    /**
+     * Hide stages UI
+     */
+    hideStagesUI() {
+        const stagesUI = document.getElementById('stages-ui');
+        const gameControls = document.getElementById('game-controls');
+        
+        if (stagesUI) {
+            stagesUI.style.display = 'none';
+        }
+        
+        if (gameControls) {
+            gameControls.style.display = 'block';
+        }
+        
+        console.log('❌ Closed stages UI');
+    }
+    
+    /**
+     * Update current stage display
+     */
+    updateStageDisplay() {
+        const stageDetails = document.getElementById('current-stage-details');
+        if (!stageDetails) return;
+        
+        const currentStage = this.stageManager.getCurrentStage();
+        const progress = this.stageManager.getStageProgress();
+        
+        stageDetails.innerHTML = `
+            <div style="background: #222; padding: 15px; border: 1px solid #444; margin: 10px 0;">
+                <h5 style="color: #ffd43b; margin: 0 0 10px 0;">${currentStage.name}</h5>
+                <p style="color: #ccc; margin: 5px 0;">${currentStage.description}</p>
+                <div style="color: #51cf66; margin: 10px 0;">
+                    <strong>Progress:</strong> ${progress.victories}/${progress.victoriesNeeded} victories 
+                    (${Math.round(progress.progressPercent)}%)
+                </div>
+                <div style="background: #333; height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0;">
+                    <div style="background: linear-gradient(90deg, #51cf66, #69db7c); height: 100%; width: ${progress.progressPercent}%; transition: width 0.3s ease;"></div>
+                </div>
+                <div style="color: #74c0fc;">
+                    <strong>Rewards:</strong> ${currentStage.expMultiplier}x EXP, ${currentStage.materialMultiplier}x Materials
+                </div>
+            </div>
+        `;
+    }
+    
+    /**
+     * Update stage selection list
+     */
+    updateStageList() {
+        const stageSelection = document.getElementById('stage-selection');
+        if (!stageSelection) return;
+        
+        const allStages = this.stageManager.getAllStageInfo();
+        
+        stageSelection.innerHTML = '';
+        
+        allStages.forEach(stage => {
+            const stageElement = document.createElement('div');
+            stageElement.className = 'stage-item';
+            stageElement.style.cssText = `
+                border: 1px solid ${stage.unlocked ? (stage.current ? '#ffd43b' : '#444') : '#666'};
+                margin: 5px 0;
+                padding: 15px;
+                background: ${stage.current ? '#2a2a0a' : '#222'};
+                cursor: ${stage.unlocked ? 'pointer' : 'not-allowed'};
+                opacity: ${stage.unlocked ? '1' : '0.5'};
+                position: relative;
+            `;
+            
+            const progressBar = stage.unlocked ? `
+                <div style="background: #333; height: 8px; border-radius: 4px; overflow: hidden; margin: 10px 0;">
+                    <div style="background: linear-gradient(90deg, #51cf66, #69db7c); height: 100%; width: ${stage.progress.progressPercent}%; transition: width 0.3s ease;"></div>
+                </div>
+                <div style="color: #888; font-size: 12px;">
+                    ${stage.progress.victories}/${stage.progress.victoriesNeeded} victories ${stage.progress.completed ? '✅' : ''}
+                </div>
+            ` : '';
+            
+            stageElement.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: ${stage.current ? '#ffd43b' : '#fff'};">
+                            ${stage.name} ${stage.current ? '(Current)' : ''}
+                        </strong>
+                        <div style="color: #ccc; margin: 5px 0;">${stage.description}</div>
+                        ${stage.unlocked ? `
+                            <div style="color: #74c0fc; font-size: 12px;">
+                                Level Range: ${stage.enemyLevelRange[0]}-${stage.enemyLevelRange[1]} | 
+                                ${stage.expMultiplier}x EXP | ${stage.materialMultiplier}x Materials
+                            </div>
+                        ` : `
+                            <div style="color: #ff6b6b; font-size: 12px;">
+                                🔒 Requires: Level ${stage.unlockCondition.level}${stage.unlockCondition.stage ? `, Complete Stage ${stage.unlockCondition.stage}` : ''}
+                            </div>
+                        `}
+                        ${progressBar}
+                    </div>
+                    ${stage.unlocked && !stage.current ? `
+                        <button onclick="window.gameEngine.stageManager.switchToStage(${stage.id}); window.gameEngine.updateStageDisplay(); window.gameEngine.updateStageList();" 
+                                style="background: #51cf66; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                            Select
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+            
+            stageSelection.appendChild(stageElement);
+        });
+    }
+    
+    /**
+     * Show stage unlocked feedback
+     * @param {Object} data - Stage unlock data
+     */
+    showStageUnlockedFeedback(data) {
+        const { stageName, description } = data;
+        
+        const feedback = document.createElement('div');
+        feedback.className = 'stage-unlocked-feedback';
+        feedback.style.cssText = `
+            position: fixed;
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #ffd43b;
+            padding: 20px;
+            border: 2px solid #ffd43b;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(255, 212, 59, 0.5);
+            pointer-events: none;
+            z-index: 1000;
+            animation: stageUnlockedFeedback 4s ease-out forwards;
+        `;
+        
+        feedback.innerHTML = `
+            <div style="font-size: 24px; margin-bottom: 10px;">🗺️ New Stage Unlocked!</div>
+            <div style="color: #fff; font-size: 18px; margin-bottom: 5px;">${stageName}</div>
+            <div style="color: #ccc; font-size: 14px;">${description}</div>
+        `;
+        
+        document.body.appendChild(feedback);
+        
+        setTimeout(() => {
+            if (feedback.parentNode) {
+                feedback.parentNode.removeChild(feedback);
+            }
+        }, 4000);
+        
+        console.log(`🗺️ Stage unlocked: ${stageName}`);
+    }
+    
+    /**
+     * Show stage completed feedback
+     * @param {Object} data - Stage completion data
+     */
+    showStageCompletedFeedback(data) {
+        const { stageName } = data;
+        
+        const feedback = document.createElement('div');
+        feedback.className = 'stage-completed-feedback';
+        feedback.style.cssText = `
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #51cf66;
+            padding: 20px;
+            border: 2px solid #51cf66;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(81, 207, 102, 0.5);
+            pointer-events: none;
+            z-index: 1000;
+            animation: stageCompletedFeedback 3s ease-out forwards;
+        `;
+        
+        feedback.innerHTML = `
+            <div style="font-size: 24px; margin-bottom: 10px;">🎉 Stage Completed!</div>
+            <div style="color: #fff; font-size: 18px;">${stageName}</div>
+        `;
+        
+        document.body.appendChild(feedback);
+        
+        setTimeout(() => {
+            if (feedback.parentNode) {
+                feedback.parentNode.removeChild(feedback);
+            }
+        }, 3000);
+        
+        console.log(`🎉 Stage completed: ${stageName}`);
     }
     
     /**

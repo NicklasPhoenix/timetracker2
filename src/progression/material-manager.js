@@ -4,9 +4,10 @@
  */
 
 export class MaterialManager {
-    constructor(stateManager, eventSystem) {
+    constructor(stateManager, eventSystem, stageManager = null) {
         this.stateManager = stateManager;
         this.eventSystem = eventSystem;
+        this.stageManager = stageManager;
         
         this.MATERIAL_RARITY = {
             COMMON: 'common',
@@ -186,7 +187,11 @@ export class MaterialManager {
         const drops = [];
         const baseDropCount = Math.floor(Math.random() * 3) + 1; // 1-3 materials
         
-        for (let i = 0; i < baseDropCount; i++) {
+        // Apply stage multiplier if available
+        const stageMultiplier = this.stageManager ? this.stageManager.getStageMaterialMultiplier() : 1.0;
+        const adjustedDropCount = Math.ceil(baseDropCount * stageMultiplier);
+        
+        for (let i = 0; i < adjustedDropCount; i++) {
             const rarity = this.rollMaterialRarity();
             const materialId = this.selectMaterialByRarity(rarity, enemy);
             const quantity = this.calculateMaterialQuantity(rarity);
