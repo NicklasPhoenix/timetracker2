@@ -275,6 +275,17 @@ class DailyChallenges {
             reward: { type: challenge.rewardType, amount: challenge.rewardAmount }
         });
         
+        // Emit challenge completed event for achievements
+        this.eventSystem.emit('challenge_completed', {
+            challengeType: challenge.type,
+            challengeName: challenge.name
+        });
+        
+        // Emit streak update event for achievements
+        this.eventSystem.emit('challenge_streak_updated', {
+            streak: state.dailyChallenges.currentStreak
+        });
+        
         console.log(`✅ Challenge completed: ${challenge.name} - Reward: ${challenge.rewardAmount} ${challenge.rewardType}`);
     }
     

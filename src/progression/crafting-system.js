@@ -501,11 +501,12 @@ export class CraftingSystem {
             }
         });
         
-        // Emit item crafted event
+        // Emit item crafted event for achievements
         this.eventSystem.emit('item_crafted', {
             recipeId: recipeId,
             quantity: quantity,
-            totalCrafted: craftedItems[recipeId]
+            totalCrafted: craftedItems[recipeId],
+            category: this.recipes[recipeId].category
         });
     }
     

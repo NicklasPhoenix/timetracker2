@@ -102,6 +102,11 @@ class CombatManager {
         this.combatPhase = this.COMBAT_PHASES.PREPARATION;
         this.setupTurnOrder();
         
+        // Track combat metrics for achievements
+        this.combatStartTime = Date.now();
+        this.combatDamageTaken = 0;
+        this.initialPlayerHp = this.stateManager.getStateValue('player').hp;
+        
         // Update game state
         this.stateManager.updateState({
             game: { isInCombat: true },
@@ -296,6 +301,9 @@ class CombatManager {
             player: { hp: newHp }
         });
         
+        // Track damage taken for achievements
+        this.combatDamageTaken += damage;
+        
         // Create damage effect
         this.createDamageEffect(damage, 'player');
         
@@ -332,12 +340,26 @@ class CombatManager {
         const randomVariance = Math.floor(Math.random() * (variance * 2 + 1)) - variance;
         
         let finalDamage = Math.max(1, baseDamage + randomVariance);
+        let isCritical = false;
         
         // Check for critical hit
         if (criticalChance > 0 && Math.random() < criticalChance) {
             finalDamage = Math.floor(finalDamage * 2); // Critical hits do 2x damage
+            isCritical = true;
             console.log('💥 Critical hit!');
+            
+            // Emit critical hit event for achievements
+            this.eventSystem.emit('critical_hit', {
+                damage: finalDamage,
+                baseDamage: finalDamage / 2
+            });
         }
+        
+        // Emit damage dealt event for achievements
+        this.eventSystem.emit('damage_dealt', {
+            damage: finalDamage,
+            isCritical: isCritical
+        });
         
         return finalDamage;
     }
@@ -471,11 +493,19 @@ class CombatManager {
         
         console.log(`🏆 Victory! Gained ${expGained} experience`);
         
+        // Calculate combat metrics for achievements
+        const combatTime = (Date.now() - this.combatStartTime) / 1000; // in seconds
+        const playerHpRemaining = player.hp;
+        const damageTaken = this.combatDamageTaken;
+        
         // Emit combat victory event for material system
         this.eventSystem.emit('combat_victory', {
             enemy: combatData.enemy,
             expGained: expGained,
-            playerLevel: player.level
+            playerLevel: player.level,
+            combatTime: combatTime,
+            playerHpRemaining: playerHpRemaining,
+            damageTaken: damageTaken
         });
         
         // Check for level up
@@ -533,6 +563,12 @@ class CombatManager {
             this.eventSystem.emit('player_level_up', {
                 newLevel,
                 stats: { maxHp: newMaxHp, attack: newAttack, defense: newDefense }
+            });
+            
+            // Emit level up event for achievements
+            this.eventSystem.emit('level_up', {
+                level: newLevel,
+                previousLevel: newLevel - 1
             });
             
             console.log(`🌟 Level up! Now level ${newLevel}`);

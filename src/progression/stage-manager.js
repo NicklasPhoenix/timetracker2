@@ -236,6 +236,12 @@ class StageManager {
                 stageName: this.stages.find(s => s.id === stageId)?.name
             });
             
+            // Emit stage completed event for achievements
+            this.eventSystem.emit('stage_completed', {
+                stageNumber: stageId,
+                stageName: this.stages.find(s => s.id === stageId)?.name
+            });
+            
             console.log(`🎉 Stage ${stageId} completed!`);
             
             // Check if next stage should be unlocked

@@ -152,6 +152,13 @@ class PrestigeManager {
             totalPoints: newPrestigeState.totalPoints
         });
         
+        // Emit prestige performed event for achievements
+        this.eventSystem.emit('prestige_performed', {
+            pointsGained: prestigePoints,
+            newLevel: newPrestigeState.level,
+            totalResets: newPrestigeState.totalResets
+        });
+        
         return true;
     }
     

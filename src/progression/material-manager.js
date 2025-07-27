@@ -167,11 +167,13 @@ export class MaterialManager {
         materials.forEach(drop => {
             this.addMaterial(drop.materialId, drop.quantity);
             
-            // Emit material collected event for UI feedback
+            // Emit material collected event for UI feedback and achievements
             this.eventSystem.emit('material_collected', {
                 materialId: drop.materialId,
                 quantity: drop.quantity,
-                rarity: this.getMaterialRarity(drop.materialId)
+                amount: drop.quantity, // For achievement tracking
+                rarity: this.getMaterialRarity(drop.materialId),
+                type: drop.materialId
             });
         });
         

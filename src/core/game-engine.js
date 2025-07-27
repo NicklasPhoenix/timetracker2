@@ -15,6 +15,8 @@ import { EnemyDatabase } from '../progression/enemy-database.js';
 import { PrestigeManager } from '../progression/prestige-manager.js';
 import DailyChallenges from '../progression/daily-challenges.js';
 import DailyChallengesUI from '../ui/daily-challenges-ui.js';
+import { AchievementSystem } from '../progression/achievement-system.js';
+import { AchievementUI } from '../ui/achievement-ui.js';
 
 class GameEngine {
     constructor() {
@@ -46,6 +48,10 @@ class GameEngine {
         
         // Daily challenges system
         this.dailyChallenges = new DailyChallenges(this.stateManager, this.eventSystem);
+        
+        // Achievement system
+        this.achievementSystem = new AchievementSystem(this.eventSystem, this.stateManager);
+        this.achievementUI = new AchievementUI(this.achievementSystem, this.eventSystem);
         
         // Performance monitoring
         this.fpsUpdateTime = 0;
@@ -157,6 +163,9 @@ class GameEngine {
         
         // Initialize UI components
         this.dailyChallengesUI = new DailyChallengesUI(this.dailyChallenges, this.eventSystem);
+        
+        // Load achievement progress
+        this.achievementSystem.loadProgress();
         
         console.log('🎮 Game Engine initialized');
     }
