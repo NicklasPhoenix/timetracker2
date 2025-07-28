@@ -56,6 +56,20 @@ class CombatManager {
     getEffectivePlayerStats() {
         const basePlayer = this.stateManager.getStateValue('player');
         
+        // Defensive check - ensure player has valid stats
+        if (!basePlayer || typeof basePlayer.attack !== 'number' || typeof basePlayer.defense !== 'number') {
+            console.warn('Player stats not ready, using defaults');
+            return {
+                hp: 100,
+                maxHp: 100,
+                level: 1,
+                exp: 0,
+                attack: 10,
+                defense: 5,
+                criticalChance: 0
+            };
+        }
+        
         // Get prestige bonuses if available
         let prestigeBonuses = {
             damageMultiplier: 1,
