@@ -8,6 +8,7 @@ export class MaterialManager {
         this.stateManager = stateManager;
         this.eventSystem = eventSystem;
         this.stageManager = stageManager;
+        this.weeklyEvents = null; // Will be set by game engine
         
         this.MATERIAL_RARITY = {
             COMMON: 'common',
@@ -296,18 +297,38 @@ export class MaterialManager {
         const currentState = this.stateManager.getState();
         const materials = currentState.materials || {};
         
+        // Apply weekly event bonuses
+        let finalQuantity = quantity;
+        if (this.weeklyEvents && this.weeklyEvents.isEventEffectActive('materialDropMultiplier')) {
+            const multiplier = this.weeklyEvents.getEventEffectValue('materialDropMultiplier');
+            finalQuantity = Math.floor(quantity * multiplier);
+            
+            // Emit event for weekly events tracking
+            this.eventSystem.emit('material-collected', { 
+                materialId, 
+                amount: finalQuantity,
+                originalAmount: quantity,
+                multiplier: multiplier
+            });
+        } else {
+            this.eventSystem.emit('material-collected', { 
+                materialId, 
+                amount: finalQuantity
+            });
+        }
+        
         if (!materials[materialId]) {
             materials[materialId] = 0;
         }
         
-        materials[materialId] += quantity;
+        materials[materialId] += finalQuantity;
         
         this.stateManager.updateState({ materials });
         
         // Update prestige progress (if prestige system exists)
-        this.eventSystem.emit('material_collected_progress', { quantity });
+        this.eventSystem.emit('material_collected_progress', { quantity: finalQuantity });
         
-        console.log(`Added ${quantity}x ${materialId} (Total: ${materials[materialId]})`);
+        console.log(`Added ${finalQuantity}x ${materialId} (Total: ${materials[materialId]})`);
     }
     
     /**

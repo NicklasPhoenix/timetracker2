@@ -15,6 +15,8 @@ import { EnemyDatabase } from '../progression/enemy-database.js';
 import { PrestigeManager } from '../progression/prestige-manager.js';
 import DailyChallenges from '../progression/daily-challenges.js';
 import DailyChallengesUI from '../ui/daily-challenges-ui.js';
+import WeeklyEvents from '../progression/weekly-events.js';
+import WeeklyEventsUI from '../ui/weekly-events-ui.js';
 import { AchievementSystem } from '../progression/achievement-system-test.js';
 import { AchievementUI } from '../ui/achievement-ui-test.js';
 import BossManager from '../progression/boss-manager.js';
@@ -50,6 +52,13 @@ class GameEngine {
         
         // Daily challenges system
         this.dailyChallenges = new DailyChallenges(this.stateManager, this.eventSystem);
+        
+        // Weekly events system
+        this.weeklyEvents = new WeeklyEvents(this.stateManager, this.eventSystem);
+        this.weeklyEventsUI = new WeeklyEventsUI(this.weeklyEvents, this.eventSystem);
+        
+        // Connect weekly events to material system
+        this.materialManager.weeklyEvents = this.weeklyEvents;
         
         // Boss system
         this.bossManager = new BossManager(this.stateManager);
@@ -384,13 +393,20 @@ class GameEngine {
      * @param {number} deltaTime - Time since last frame
      */
     update(deltaTime) {
-        // TODO: Update game systems here
-        // - Combat system
-        // - Player movement/actions
-        // - Enemy AI
-        // - Animations
+        // Update core systems
+        if (this.dailyChallenges) {
+            this.dailyChallenges.update();
+        }
         
-        // For now, just emit a game tick event
+        if (this.weeklyEvents) {
+            this.weeklyEvents.update();
+        }
+        
+        if (this.prestigeManager) {
+            this.prestigeManager.update(deltaTime);
+        }
+        
+        // Emit game tick for other systems
         this.eventSystem.emit('game_tick', { deltaTime });
     }
     
