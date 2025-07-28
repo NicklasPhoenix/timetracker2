@@ -1,17 +1,118 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Timer Widget</title>
-    <link rel="stylesheet" href="timetracker.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incremental Combat Game</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/ui.css">
+    <link rel="stylesheet" href="styles/animations.css">
+    <link rel="stylesheet" href="styles/achievements.css">
+    <link rel="stylesheet" href="styles/boss.css">
+    <link rel="stylesheet" href="styles/weekly-events.css">
 </head>
 <body>
-    <div id="timer">
-        <span id="time">00:00:00</span>
-        <button id="start">Play</button>
-        <button id="pause">Pause</button>
-        <button id="stop">Stop</button>
+    <div id="game-container">
+        <canvas id="game-canvas" width="800" height="600"></canvas>
+        <div id="ui-overlay">
+            <div id="hud">
+                <div id="player-stats">
+                    <div id="health-bar">HP: <span id="player-hp">100</span></div>
+                    <div id="level">Level: <span id="player-level">1</span></div>
+                    <div id="materials">Materials: <span id="material-count">0</span></div>
+                </div>
+                <div id="fps-counter">FPS: <span id="fps">60</span></div>
+            </div>
+            <div id="combat-ui" style="display: none;">
+                <button id="attack-btn">Attack</button>
+                <button id="defend-btn">Defend</button>
+            </div>
+            <div id="crafting-ui" style="display: none;">
+                <h3>Crafting</h3>
+                <div id="recipe-list"></div>
+                <button id="close-crafting-btn">Close</button>
+            </div>
+            <div id="equipment-ui" style="display: none;">
+                <h3>Equipment & Inventory</h3>
+                <div id="equipment-slots">
+                    <h4>Equipped Items</h4>
+                    <div id="equipped-items"></div>
+                </div>
+                <div id="inventory-items">
+                    <h4>Inventory</h4>
+                    <div id="inventory-list"></div>
+                </div>
+                <button id="close-equipment-btn">Close</button>
+            </div>
+            <div id="stages-ui" style="display: none;">
+                <h3>Stages & Areas</h3>
+                <div id="current-stage-info">
+                    <h4>Current Stage</h4>
+                    <div id="current-stage-details"></div>
+                </div>
+                <div id="stage-list">
+                    <h4>Available Stages</h4>
+                    <div id="stage-selection"></div>
+                </div>
+                <button id="close-stages-btn">Close</button>
+            </div>
+            <div id="prestige-ui" style="display: none;">
+                <h3>🌟 Prestige System</h3>
+                <div id="prestige-info">
+                    <div id="prestige-stats">
+                        <div>Prestige Level: <span id="prestige-level">0</span></div>
+                        <div>Available Points: <span id="prestige-points">0</span></div>
+                        <div>Run #<span id="run-number">1</span></div>
+                        <div>Total Resets: <span id="total-resets">0</span></div>
+                    </div>
+                    <div id="prestige-progress">
+                        <h4>Current Run Progress</h4>
+                        <div>Max Stage: <span id="max-stage-reached">1</span></div>
+                        <div>Combat Wins: <span id="total-combat-wins">0</span></div>
+                        <div>Materials: <span id="total-materials">0</span></div>
+                        <div>Equipment Crafted: <span id="total-equipment">0</span></div>
+                    </div>
+                </div>
+                <div id="prestige-reset-section">
+                    <h4>Reset for Prestige</h4>
+                    <div>Available Points: <span id="available-prestige-points">0</span></div>
+                    <button id="prestige-reset-btn" disabled>Reset & Gain Points</button>
+                </div>
+                <div id="prestige-upgrades">
+                    <h4>Prestige Upgrades</h4>
+                    <div id="upgrade-list"></div>
+                </div>
+                <button id="close-prestige-btn">Close</button>
+            </div>
+            <div id="challenges-ui" style="display: none;">
+                <h3>📅 Daily Challenges</h3>
+                <div id="challenge-stats">
+                    <div>Streak: <span id="challenge-streak">0</span> days</div>
+                    <div>Total Completed: <span id="total-challenges-completed">0</span></div>
+                    <div>Today: <span id="challenges-completed-today">0</span>/3</div>
+                </div>
+                <div id="daily-challenges-list">
+                    <h4>Today's Challenges</h4>
+                    <div id="challenges-container"></div>
+                </div>
+                <div id="challenge-rewards-info">
+                    <h4>Challenge Rewards</h4>
+                    <p>Complete daily challenges to earn materials, experience, equipment, and prestige points!</p>
+                    <p>Maintain your streak for bonus rewards!</p>
+                </div>
+                <button id="close-challenges-btn">Close</button>
+            </div>
+            <div id="game-controls">
+                <button id="crafting-btn" style="margin-top: 10px;">Crafting</button>
+                <button id="equipment-btn" style="margin-top: 5px;">Equipment</button>
+                <button id="stages-btn" style="margin-top: 5px;">Stages</button>
+                <button id="prestige-btn" style="margin-top: 5px;">🌟 Prestige</button>
+                <button id="challenges-btn" style="margin-top: 5px;">📅 Challenges</button>
+            </div>
+        </div>
     </div>
-    <script src="timetracker.js"></script>
+    
+    <!-- Game scripts -->
+    <script type="module" src="src/core/game-engine.js"></script>
 </body>
 </html>

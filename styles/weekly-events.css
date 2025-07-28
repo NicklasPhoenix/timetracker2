@@ -1,0 +1,438 @@
+/* Weekly Events UI Styles */
+#weekly-events-ui {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.weekly-events-content {
+    background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+    border-radius: 12px;
+    padding: 25px;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    border: 2px solid #444;
+}
+
+.weekly-events-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #444;
+    padding-bottom: 15px;
+}
+
+.weekly-events-header h3 {
+    color: #ffd700;
+    margin: 0;
+    font-size: 1.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.close-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.close-btn:hover {
+    background: #c82333;
+}
+
+.current-event-section,
+.event-leaderboard-section,
+.event-history-section {
+    margin-bottom: 25px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.current-event-section h4,
+.event-leaderboard-section h4,
+.event-history-section h4 {
+    color: #87CEEB;
+    margin: 0 0 15px 0;
+    font-size: 1.2rem;
+    border-bottom: 1px solid #444;
+    padding-bottom: 8px;
+}
+
+/* Current Event Styles */
+.no-event {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+.event-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 15px;
+}
+
+.event-icon {
+    font-size: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 50%;
+    border: 2px solid #ffd700;
+}
+
+.event-info h5 {
+    color: #ffd700;
+    margin: 0 0 8px 0;
+    font-size: 1.3rem;
+}
+
+.event-info p {
+    color: #ccc;
+    margin: 0 0 10px 0;
+    line-height: 1.4;
+}
+
+.event-meta {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.difficulty-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.difficulty-easy { background: #28a745; color: white; }
+.difficulty-normal { background: #ffc107; color: black; }
+.difficulty-hard { background: #fd7e14; color: white; }
+.difficulty-extreme { background: #dc3545; color: white; }
+
+.time-remaining {
+    color: #17a2b8;
+    font-weight: bold;
+}
+
+/* Objectives Styles */
+.event-objectives {
+    margin: 20px 0;
+}
+
+.event-objectives h6 {
+    color: #87CEEB;
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+}
+
+.objective {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 8px;
+    position: relative;
+    border-left: 4px solid #6c757d;
+    transition: border-color 0.3s;
+}
+
+.objective.completed {
+    border-left-color: #28a745;
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.objective-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.objective-name {
+    color: #fff;
+    font-weight: bold;
+}
+
+.objective-progress {
+    color: #87CEEB;
+    font-size: 0.9rem;
+}
+
+.progress-bar {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, #17a2b8, #007bff);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.objective.completed .progress-fill {
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.checkmark {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    color: #28a745;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* Rewards Styles */
+.event-rewards h6 {
+    color: #87CEEB;
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+}
+
+.no-rewards {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 10px;
+}
+
+.reward-entry {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+.reward-icon {
+    font-size: 1.2rem;
+}
+
+.reward-text {
+    color: #ffd700;
+    font-weight: bold;
+    flex: 1;
+}
+
+.reward-source {
+    color: #888;
+    font-size: 0.8rem;
+}
+
+/* Leaderboard Styles */
+.no-leaderboard {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+.leaderboard-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    transition: background 0.2s;
+}
+
+.leaderboard-entry:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-entry.current-player {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid #ffd700;
+}
+
+.rank {
+    font-weight: bold;
+    color: #ffd700;
+    min-width: 40px;
+}
+
+.player {
+    color: #fff;
+    flex: 1;
+    text-align: left;
+    margin-left: 15px;
+}
+
+.score {
+    color: #87CEEB;
+    font-weight: bold;
+}
+
+/* Event History Styles */
+.no-history {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+.history-entry {
+    margin-bottom: 8px;
+}
+
+.history-event {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    border-left: 3px solid #6c757d;
+}
+
+.history-icon {
+    font-size: 1.5rem;
+}
+
+.history-info {
+    flex: 1;
+}
+
+.history-name {
+    color: #fff;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.history-completion {
+    color: #888;
+    font-size: 0.8rem;
+}
+
+.history-score {
+    color: #87CEEB;
+    font-weight: bold;
+}
+
+/* Weekly Events Button */
+#weekly-events-btn {
+    background: linear-gradient(135deg, #6f42c1, #e83e8c);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: bold;
+    position: relative;
+    transition: all 0.2s;
+    margin-left: 10px;
+}
+
+#weekly-events-btn:hover {
+    background: linear-gradient(135deg, #5a2d91, #c02456);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.event-indicator {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-indicator 2s infinite;
+}
+
+@keyframes pulse-indicator {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+/* Event Notifications */
+.event-notification {
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.event-notification.treasure {
+    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+    color: white;
+}
+
+.event-notification.bonus {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad) !important;
+    color: white;
+}
+
+.event-notification.success {
+    background: linear-gradient(135deg, #27ae60, #2ecc71) !important;
+    color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .weekly-events-content {
+        margin: 10px;
+        padding: 15px;
+        max-height: 95vh;
+    }
+    
+    .event-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .event-meta {
+        justify-content: center;
+    }
+    
+    .leaderboard-entry {
+        padding: 8px 10px;
+    }
+    
+    .reward-entry {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* Animation for event completion */
+@keyframes event-complete {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(40, 167, 69, 0.5); }
+    100% { transform: scale(1); }
+}
+
+.objective.completed {
+    animation: event-complete 0.6s ease-out;
+}
