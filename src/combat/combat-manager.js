@@ -364,6 +364,13 @@ class CombatManager {
             description: attackDescription
         });
         
+        // Emit player_attacked event for visual effects
+        this.eventSystem.emit('player_attacked', {
+            damage: damage,
+            attacker: this.currentEnemy.name,
+            isBoss: this.currentEnemy.isBoss || false
+        });
+        
         console.log(`👹 ${this.currentEnemy.name} ${attackDescription} for ${damage} damage! Player HP: ${newHp}`);
         
         // Check if player is defeated

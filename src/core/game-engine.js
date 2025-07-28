@@ -5,6 +5,7 @@
 
 import { StateManager } from './state-manager.js';
 import { EventSystem } from './event-system.js';
+import { VisualRenderer } from './visual-renderer.js';
 import { CombatManager } from '../combat/combat-manager.js';
 import { MaterialManager } from '../progression/material-manager.js';
 import { InventoryManager } from '../progression/inventory-manager.js';
@@ -35,6 +36,9 @@ class GameEngine {
         // Core systems
         this.stateManager = new StateManager();
         this.eventSystem = new EventSystem();
+        
+        // Visual system
+        this.visualRenderer = null; // Initialized after canvas setup
         
         // Prestige system
         this.prestigeManager = new PrestigeManager(this.stateManager, this.eventSystem);
@@ -174,6 +178,9 @@ class GameEngine {
             }
         });
         
+        // Visual effects event listeners
+        this.setupVisualEffectListeners();
+        
         this.start();
         
         // Initialize UI components
@@ -187,6 +194,53 @@ class GameEngine {
     }
     
     /**
+     * Setup visual effect event listeners
+     */
+    setupVisualEffectListeners() {
+        // Combat visual effects
+        this.eventSystem.on('damage_dealt', (data) => {
+            if (this.visualRenderer && data.target === 'enemy') {
+                this.visualRenderer.triggerAnimation('playerAttack');
+                this.visualRenderer.triggerAnimation('damage');
+                this.visualRenderer.createDamageParticles(
+                    this.canvas.width / 2 + 150, 
+                    this.canvas.height / 2, 
+                    data.damage, 
+                    data.isCritical
+                );
+            }
+        });
+        
+        this.eventSystem.on('player_attacked', (data) => {
+            if (this.visualRenderer) {
+                this.visualRenderer.triggerAnimation('enemyAttack');
+                this.visualRenderer.createDamageParticles(
+                    this.canvas.width / 2 - 150, 
+                    this.canvas.height / 2, 
+                    data.damage
+                );
+            }
+        });
+        
+        this.eventSystem.on('critical_hit', (data) => {
+            if (this.visualRenderer) {
+                this.visualRenderer.triggerAnimation('damage', 800);
+            }
+        });
+        
+        this.eventSystem.on('item_used', (data) => {
+            if (this.visualRenderer && data.effect === 'heal') {
+                this.visualRenderer.createHealingParticles(
+                    this.canvas.width / 2 - 150, 
+                    this.canvas.height / 2
+                );
+            }
+        });
+        
+        console.log('🎨 Visual effect listeners setup complete');
+    }
+    
+    /**
      * Setup HTML5 canvas with responsive design
      */
     setupCanvas() {
@@ -197,6 +251,9 @@ class GameEngine {
         
         this.ctx = this.canvas.getContext('2d');
         this.setupCanvasResponsive();
+        
+        // Initialize visual renderer after canvas is ready
+        this.visualRenderer = new VisualRenderer(this.canvas, this.ctx, this.stateManager, this.eventSystem);
         
         // Setup canvas styling for crisp pixel art
         this.ctx.imageSmoothingEnabled = false;
@@ -410,18 +467,13 @@ class GameEngine {
      * Render the current frame
      */
     render() {
-        // Clear canvas
-        this.ctx.fillStyle = '#000000';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // TODO: Render game objects here
-        // - Background
-        // - Player
-        // - Enemies
-        // - Effects
-        
-        // Placeholder rendering
-        this.renderPlaceholder();
+        if (this.visualRenderer) {
+            this.visualRenderer.render();
+        } else {
+            // Fallback rendering if visual renderer not ready
+            this.ctx.fillStyle = '#1a1a2e';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
     }
     
     /**
