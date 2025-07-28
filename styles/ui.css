@@ -18,6 +18,8 @@
     padding: 15px;
     border-radius: 8px;
     border: 1px solid #444;
+    z-index: 50; /* Ensure HUD stays above canvas but below modals */
+    max-width: 200px; /* Prevent HUD from getting too wide */
 }
 
 #player-stats {
@@ -51,6 +53,7 @@
     pointer-events: auto;
     display: flex;
     gap: 15px;
+    z-index: 50; /* Ensure combat UI stays above canvas but below modals */
 }
 
 button {
@@ -148,6 +151,10 @@ button:disabled {
     bottom: 20px;
     right: 20px;
     pointer-events: auto;
+    z-index: 50; /* Ensure controls stay above canvas but below modals */
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
 #game-controls button {
@@ -334,8 +341,7 @@ button:disabled {
 
 .challenge-notification {
     position: fixed;
-    top: 50%;
-    left: 50%;
+    /* top and left will be set dynamically by JavaScript */
     transform: translate(-50%, -50%);
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: 2px solid #ffd43b;
@@ -343,7 +349,6 @@ button:disabled {
     padding: 20px;
     z-index: 1000;
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
     transition: all 0.3s ease;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }

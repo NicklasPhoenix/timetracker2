@@ -3,8 +3,7 @@
 /* Achievement Notification */
 .achievement-notification {
     position: fixed;
-    top: 50%;
-    left: 50%;
+    /* top and left will be set dynamically by JavaScript */
     transform: translate(-50%, -50%) scale(0.8);
     background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
     border: 3px solid #ffd700;

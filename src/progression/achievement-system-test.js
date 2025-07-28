@@ -140,9 +140,14 @@ export class AchievementSystem {
     }
 
     showAchievementNotification(achievement) {
+        // Get next available position from game engine to prevent overlap
+        const position = window.gameEngine ? window.gameEngine.getNextFeedbackPosition() : { top: 50, left: 50 };
+        
         // Create achievement notification overlay
         const notification = document.createElement('div');
         notification.className = 'achievement-notification';
+        notification.style.top = `${Math.max(15, position.top - 15)}%`;
+        notification.style.left = `${position.left}%`;
         notification.innerHTML = `
             <div class="achievement-notification-content">
                 <div class="achievement-icon">🏆</div>
@@ -155,6 +160,11 @@ export class AchievementSystem {
         `;
 
         document.body.appendChild(notification);
+        
+        // Register with game engine feedback system
+        if (window.gameEngine) {
+            window.gameEngine.registerFeedback(notification, 5000);
+        }
 
         // Animate in
         setTimeout(() => notification.classList.add('show'), 100);

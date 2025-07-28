@@ -187,9 +187,14 @@ class DailyChallengesUI {
      * Show challenge completion notification
      */
     showChallengeCompletionNotification(challenge, reward) {
+        // Get next available position from game engine to prevent overlap
+        const position = window.gameEngine ? window.gameEngine.getNextFeedbackPosition() : { top: 50, left: 50 };
+        
         // Create notification element
         const notification = document.createElement('div');
         notification.className = 'challenge-notification';
+        notification.style.top = `${position.top}%`;
+        notification.style.left = `${position.left}%`;
         notification.innerHTML = `
             <div class="notification-content">
                 <div class="notification-title">🎉 Challenge Completed!</div>
@@ -200,6 +205,11 @@ class DailyChallengesUI {
         
         // Add to DOM
         document.body.appendChild(notification);
+        
+        // Register with game engine feedback system
+        if (window.gameEngine) {
+            window.gameEngine.registerFeedback(notification, 4000);
+        }
         
         // Animate in
         setTimeout(() => {

@@ -78,6 +78,10 @@ class GameEngine {
         this.frameTimeBuffer = [];
         this.maxFrameTimeBufferSize = 60;
         
+        // Feedback management to prevent overlapping
+        this.activeFeedbacks = [];
+        this.feedbackOffsetY = 0;
+        
         this.init();
     }
     
@@ -672,13 +676,16 @@ class GameEngine {
         
         if (!material) return;
         
+        // Get next available position to prevent overlap
+        const position = this.getNextFeedbackPosition();
+        
         // Create floating text effect
         const feedback = document.createElement('div');
         feedback.className = 'material-feedback';
         feedback.style.cssText = `
             position: fixed;
-            top: 50%;
-            left: 50%;
+            top: ${position.top}%;
+            left: ${position.left}%;
             transform: translate(-50%, -50%);
             color: ${this.materialManager.RARITY_COLORS[rarity]};
             font-size: 18px;
@@ -691,6 +698,7 @@ class GameEngine {
         feedback.textContent = `+${quantity} ${material.name}`;
         
         document.body.appendChild(feedback);
+        this.registerFeedback(feedback, 2000);
         
         // Remove element after animation
         setTimeout(() => {
@@ -1154,11 +1162,14 @@ class GameEngine {
     showStageUnlockedFeedback(data) {
         const { stageName, description } = data;
         
+        // Get next available position to prevent overlap
+        const position = this.getNextFeedbackPosition();
+        
         const feedback = document.createElement('div');
         feedback.className = 'stage-unlocked-feedback';
         feedback.style.cssText = `
             position: fixed;
-            top: 25%;
+            top: ${Math.max(20, position.top - 5)}%;
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.9);
@@ -1182,6 +1193,7 @@ class GameEngine {
         `;
         
         document.body.appendChild(feedback);
+        this.registerFeedback(feedback, 4000);
         
         setTimeout(() => {
             if (feedback.parentNode) {
@@ -1199,11 +1211,14 @@ class GameEngine {
     showStageCompletedFeedback(data) {
         const { stageName } = data;
         
+        // Get next available position to prevent overlap
+        const position = this.getNextFeedbackPosition();
+        
         const feedback = document.createElement('div');
         feedback.className = 'stage-completed-feedback';
         feedback.style.cssText = `
             position: fixed;
-            top: 30%;
+            top: ${Math.max(25, position.top)}%;
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.9);
@@ -1226,6 +1241,7 @@ class GameEngine {
         `;
         
         document.body.appendChild(feedback);
+        this.registerFeedback(feedback, 3000);
         
         setTimeout(() => {
             if (feedback.parentNode) {
@@ -1243,12 +1259,15 @@ class GameEngine {
     showRecipeUnlockedFeedback(data) {
         const { recipeName } = data;
         
+        // Get next available position to prevent overlap
+        const position = this.getNextFeedbackPosition();
+        
         const feedback = document.createElement('div');
         feedback.className = 'recipe-feedback';
         feedback.style.cssText = `
             position: fixed;
-            top: 30%;
-            left: 50%;
+            top: ${position.top}%;
+            left: ${position.left}%;
             transform: translate(-50%, -50%);
             color: #ffd43b;
             font-size: 20px;
@@ -1261,6 +1280,7 @@ class GameEngine {
         feedback.textContent = `🔓 New Recipe: ${recipeName}`;
         
         document.body.appendChild(feedback);
+        this.registerFeedback(feedback, 3000);
         
         setTimeout(() => {
             if (feedback.parentNode) {
@@ -1419,12 +1439,15 @@ class GameEngine {
      */
     performPrestige() {
         if (this.prestigeManager.performPrestige()) {
+            // Get next available position to prevent overlap
+            const position = this.getNextFeedbackPosition();
+            
             // Show prestige success feedback
             const feedback = document.createElement('div');
             feedback.className = 'prestige-feedback';
             feedback.style.cssText = `
                 position: fixed;
-                top: 25%;
+                top: ${Math.max(20, position.top - 10)}%;
                 left: 50%;
                 transform: translate(-50%, -50%);
                 background: rgba(0, 0, 0, 0.9);
@@ -1448,6 +1471,7 @@ class GameEngine {
             `;
             
             document.body.appendChild(feedback);
+            this.registerFeedback(feedback, 4000);
             
             setTimeout(() => {
                 if (feedback.parentNode) {
@@ -1499,6 +1523,49 @@ class GameEngine {
         }
         
         console.log('❌ Closed challenges UI');
+    }
+    
+    /**
+     * Get next available position for feedback messages to prevent overlap
+     * @returns {Object} Position object with top and left values
+     */
+    getNextFeedbackPosition() {
+        // Clean up expired feedbacks first
+        this.activeFeedbacks = this.activeFeedbacks.filter(feedback => 
+            feedback.element && feedback.element.parentNode
+        );
+        
+        // Calculate next position
+        const baseTop = 45; // Start at 45% to avoid center UI elements
+        const offsetIncrement = 8; // 8% spacing between feedbacks
+        const maxFeedbacks = 5; // Maximum visible feedbacks before cycling
+        
+        const position = {
+            top: baseTop + (this.activeFeedbacks.length % maxFeedbacks) * offsetIncrement,
+            left: 50
+        };
+        
+        return position;
+    }
+    
+    /**
+     * Register a feedback element for position management
+     * @param {HTMLElement} element - Feedback element
+     * @param {number} duration - Duration in milliseconds
+     */
+    registerFeedback(element, duration = 2000) {
+        const feedback = {
+            element,
+            timestamp: Date.now(),
+            duration
+        };
+        
+        this.activeFeedbacks.push(feedback);
+        
+        // Auto-cleanup
+        setTimeout(() => {
+            this.activeFeedbacks = this.activeFeedbacks.filter(f => f !== feedback);
+        }, duration);
     }
     
     /**
