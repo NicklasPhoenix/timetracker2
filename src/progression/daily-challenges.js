@@ -341,6 +341,17 @@ class DailyChallenges {
         const state = this.stateManager.getState();
         const today = this.getCurrentDateString();
         
+        // Initialize dailyChallenges if it doesn't exist
+        if (!state.dailyChallenges) {
+            state.dailyChallenges = {
+                lastRefresh: '',
+                currentChallenges: [],
+                completedToday: [],
+                streak: 0,
+                totalCompleted: 0
+            };
+        }
+        
         if (state.dailyChallenges.lastRefresh !== today) {
             // New day - refresh challenges
             state.dailyChallenges.lastRefresh = today;

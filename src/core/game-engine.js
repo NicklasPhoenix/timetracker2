@@ -395,15 +395,11 @@ class GameEngine {
     update(deltaTime) {
         // Update core systems
         if (this.dailyChallenges) {
-            this.dailyChallenges.update();
+            this.dailyChallenges.checkAndRefreshChallenges();
         }
         
         if (this.weeklyEvents) {
             this.weeklyEvents.update();
-        }
-        
-        if (this.prestigeManager) {
-            this.prestigeManager.update(deltaTime);
         }
         
         // Emit game tick for other systems

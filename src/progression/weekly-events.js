@@ -95,7 +95,7 @@ class WeeklyEvents {
      * Initialize weekly events system
      */
     initializeEvents() {
-        const gameState = this.stateManager.getGameState();
+        const gameState = this.stateManager.getState();
         
         // Load existing event data
         if (gameState.weeklyEvents) {
@@ -249,8 +249,8 @@ class WeeklyEvents {
      * Select event difficulty based on player progression
      */
     selectEventDifficulty() {
-        const gameState = this.stateManager.getGameState();
-        const playerLevel = gameState.player.level || 1;
+        const gameState = this.stateManager.getState();
+        const playerLevel = gameState.player?.level || 1;
         const stageProgress = gameState.stages?.currentStage || 1;
         
         // Calculate difficulty based on player progression
@@ -594,7 +594,7 @@ class WeeklyEvents {
             lastUpdate: new Date().toISOString()
         };
         
-        this.stateManager.updateGameState({ weeklyEvents: eventData });
+        this.stateManager.updateState({ weeklyEvents: eventData });
     }
     
     /**
