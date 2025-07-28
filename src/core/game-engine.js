@@ -144,6 +144,12 @@ class GameEngine {
             if (data.buttonId === 'close-boss-btn') {
                 this.hideBossUI();
             }
+            if (data.buttonId === 'weekly-events-btn') {
+                this.showWeeklyEventsUI();
+            }
+            if (data.buttonId === 'close-weekly-events-btn') {
+                this.hideWeeklyEventsUI();
+            }
         });
         
         // Listen for recipe unlocks
@@ -1604,6 +1610,41 @@ class GameEngine {
     }
     
     /**
+     * Show weekly events UI
+     */
+    showWeeklyEventsUI() {
+        // Close all other UIs first
+        this.closeAllUIs();
+        
+        if (this.weeklyEventsUI) {
+            this.weeklyEventsUI.showUI();
+        }
+        
+        const gameControls = document.getElementById('game-controls');
+        if (gameControls) {
+            gameControls.style.display = 'none';
+        }
+        
+        console.log('🎉 Opened weekly events UI');
+    }
+    
+    /**
+     * Hide weekly events UI
+     */
+    hideWeeklyEventsUI() {
+        if (this.weeklyEventsUI) {
+            this.weeklyEventsUI.hideUI();
+        }
+        
+        const gameControls = document.getElementById('game-controls');
+        if (gameControls) {
+            gameControls.style.display = 'block';
+        }
+        
+        console.log('❌ Closed weekly events UI');
+    }
+    
+    /**
      * Close all UI panels to prevent overlapping
      */
     closeAllUIs() {
@@ -1613,7 +1654,8 @@ class GameEngine {
             'stages-ui',
             'prestige-ui',
             'challenges-ui',
-            'boss-ui'
+            'boss-ui',
+            'weekly-events-ui'
         ];
         
         uiPanels.forEach(panelId => {
@@ -1630,6 +1672,10 @@ class GameEngine {
         
         if (this.bossUI) {
             this.bossUI?.closeBossUI?.();
+        }
+        
+        if (this.weeklyEventsUI) {
+            this.weeklyEventsUI?.hideUI?.();
         }
     }
 }

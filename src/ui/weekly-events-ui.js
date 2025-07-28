@@ -87,15 +87,16 @@ class WeeklyEventsUI {
     }
     
     /**
-     * Add weekly events button to the HUD
+     * Add weekly events button to the game controls (not HUD)
      */
     addWeeklyEventsButton() {
-        const hud = document.getElementById('hud');
+        const gameControls = document.getElementById('game-controls');
+        if (!gameControls) return;
+        
         const weeklyEventsBtn = document.createElement('button');
         weeklyEventsBtn.id = 'weekly-events-btn';
         weeklyEventsBtn.innerHTML = '🎉 Events';
-        weeklyEventsBtn.className = 'ui-button';
-        weeklyEventsBtn.onclick = () => this.toggleUI();
+        weeklyEventsBtn.style.marginTop = '5px';
         
         // Add event indicator for active events
         const eventIndicator = document.createElement('span');
@@ -104,7 +105,7 @@ class WeeklyEventsUI {
         eventIndicator.style.display = 'none';
         weeklyEventsBtn.appendChild(eventIndicator);
         
-        hud.appendChild(weeklyEventsBtn);
+        gameControls.appendChild(weeklyEventsBtn);
     }
     
     /**
