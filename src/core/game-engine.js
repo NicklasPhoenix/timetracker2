@@ -134,6 +134,12 @@ class GameEngine {
             if (data.buttonId === 'close-challenges-btn') {
                 this.hideChallengesUI();
             }
+            if (data.buttonId === 'boss-btn') {
+                this.showBossUI();
+            }
+            if (data.buttonId === 'close-boss-btn') {
+                this.hideBossUI();
+            }
         });
         
         // Listen for recipe unlocks
@@ -700,6 +706,9 @@ class GameEngine {
      * Show crafting UI
      */
     showCraftingUI() {
+        // Close all other UIs first
+        this.closeAllUIs();
+        
         const craftingUI = document.getElementById('crafting-ui');
         const gameControls = document.getElementById('game-controls');
         
@@ -796,6 +805,9 @@ class GameEngine {
      * Show equipment UI
      */
     showEquipmentUI() {
+        // Close all other UIs first
+        this.closeAllUIs();
+        
         const equipmentUI = document.getElementById('equipment-ui');
         const gameControls = document.getElementById('game-controls');
         
@@ -874,11 +886,22 @@ class GameEngine {
                         ${item.name} (${item.quality})<br>
                         <small>${statsText}</small>
                     </div>
-                    <button onclick="window.gameEngine.equipmentManager.unequipItem('${slotId}')" 
+                    <button data-unequip-slot="${slotId}" class="unequip-btn"
                             style="margin-top: 5px; background: #ff6b6b; border: none; padding: 2px 8px; color: white; cursor: pointer;">
                         Unequip
                     </button>
                 `;
+                
+                // Add event listener for unequip button
+                const unequipBtn = slotDiv.querySelector('.unequip-btn');
+                if (unequipBtn) {
+                    unequipBtn.addEventListener('click', () => {
+                        this.equipmentManager.unequipItem(slotId);
+                        this.updateEquipmentDisplay();
+                        this.updateInventoryDisplay();
+                        this.updateUI();
+                    });
+                }
             } else {
                 slotDiv.innerHTML = `<strong>${slotName}</strong><br><em style="color: #666;">Empty</em>`;
             }
@@ -984,6 +1007,9 @@ class GameEngine {
      * Show stages UI
      */
     showStagesUI() {
+        // Close all other UIs first
+        this.closeAllUIs();
+        
         const stagesUI = document.getElementById('stages-ui');
         const gameControls = document.getElementById('game-controls');
         
@@ -1099,7 +1125,7 @@ class GameEngine {
                         ${progressBar}
                     </div>
                     ${stage.unlocked && !stage.current ? `
-                        <button onclick="window.gameEngine.stageManager.switchToStage(${stage.id}); window.gameEngine.updateStageDisplay(); window.gameEngine.updateStageList();" 
+                        <button class="stage-select-btn" data-stage-id="${stage.id}"
                                 style="background: #51cf66; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
                             Select
                         </button>
@@ -1108,6 +1134,16 @@ class GameEngine {
             `;
             
             stageSelection.appendChild(stageElement);
+            
+            // Add event listener for stage select button
+            const stageSelectBtn = stageElement.querySelector('.stage-select-btn');
+            if (stageSelectBtn) {
+                stageSelectBtn.addEventListener('click', () => {
+                    this.stageManager.switchToStage(stage.id);
+                    this.updateStageDisplay();
+                    this.updateStageList();
+                });
+            }
         });
     }
     
@@ -1239,6 +1275,9 @@ class GameEngine {
      * Show prestige UI
      */
     showPrestigeUI() {
+        // Close all other UIs first
+        this.closeAllUIs();
+        
         const prestigeUI = document.getElementById('prestige-ui');
         const gameControls = document.getElementById('game-controls');
         
@@ -1350,7 +1389,7 @@ class GameEngine {
                         <small>Current Level: ${currentLevel}</small><br>
                         <small>Cost: ${cost} prestige points</small>
                     </div>
-                    <button onclick="window.gameEngine.prestigeManager.purchaseUpgrade('${upgradeType}'); window.gameEngine.updatePrestigeDisplay();" 
+                    <button class="prestige-upgrade-btn" data-upgrade-type="${upgradeType}" 
                             ${canAfford ? '' : 'disabled'}
                             style="background: ${canAfford ? '#51cf66' : '#666'}; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: ${canAfford ? 'pointer' : 'not-allowed'};">
                         ${canAfford ? 'Purchase' : 'Not Affordable'}
@@ -1359,6 +1398,15 @@ class GameEngine {
             `;
             
             upgradeList.appendChild(upgradeElement);
+            
+            // Add event listener for prestige upgrade button
+            const upgradeBtn = upgradeElement.querySelector('.prestige-upgrade-btn');
+            if (upgradeBtn && canAfford) {
+                upgradeBtn.addEventListener('click', () => {
+                    this.prestigeManager.purchaseUpgrade(upgradeType);
+                    this.updatePrestigeDisplay();
+                });
+            }
         });
         
         if (availableUpgrades.length === 0) {
@@ -1420,6 +1468,9 @@ class GameEngine {
      * Show daily challenges UI
      */
     showChallengesUI() {
+        // Close all other UIs first
+        this.closeAllUIs();
+        
         // The UI is handled by DailyChallengesUI class
         if (this.dailyChallengesUI) {
             this.dailyChallengesUI.showChallengesUI();
@@ -1448,6 +1499,71 @@ class GameEngine {
         }
         
         console.log('❌ Closed challenges UI');
+    }
+    
+    /**
+     * Show boss UI
+     */
+    showBossUI() {
+        // Close all other UIs first
+        this.closeAllUIs();
+        
+        if (this.bossUI) {
+            this.bossUI.openBossUI();
+        }
+        
+        const gameControls = document.getElementById('game-controls');
+        if (gameControls) {
+            gameControls.style.display = 'none';
+        }
+        
+        console.log('👑 Opened boss UI');
+    }
+    
+    /**
+     * Hide boss UI
+     */
+    hideBossUI() {
+        if (this.bossUI) {
+            this.bossUI.closeBossUI();
+        }
+        
+        const gameControls = document.getElementById('game-controls');
+        if (gameControls) {
+            gameControls.style.display = 'block';
+        }
+        
+        console.log('❌ Closed boss UI');
+    }
+    
+    /**
+     * Close all UI panels to prevent overlapping
+     */
+    closeAllUIs() {
+        const uiPanels = [
+            'crafting-ui',
+            'equipment-ui', 
+            'stages-ui',
+            'prestige-ui',
+            'challenges-ui',
+            'boss-ui'
+        ];
+        
+        uiPanels.forEach(panelId => {
+            const panel = document.getElementById(panelId);
+            if (panel) {
+                panel.style.display = 'none';
+            }
+        });
+        
+        // Also handle UI classes
+        if (this.dailyChallengesUI) {
+            this.dailyChallengesUI?.hideChallengesUI?.();
+        }
+        
+        if (this.bossUI) {
+            this.bossUI?.closeBossUI?.();
+        }
     }
 }
 

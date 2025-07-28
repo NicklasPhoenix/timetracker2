@@ -193,8 +193,8 @@ class BossUI {
                     <div class="boss-unlock-req">
                         Requires: ${boss.unlockRequirement.victories} victories in Stage ${boss.unlockRequirement.stage}
                     </div>
-                    <button class="${buttonClass}" 
-                            onclick="window.gameEngine.bossUI.startBossEncounter(${stageId})"
+                    <button class="${buttonClass} boss-encounter-btn" 
+                            data-stage-id="${stageId}"
                             ${disabled ? 'disabled' : ''}>
                         ${buttonText}
                     </button>
@@ -203,6 +203,17 @@ class BossUI {
         }
 
         selection.innerHTML = html;
+        
+        // Add event listeners for boss encounter buttons
+        const bossButtons = selection.querySelectorAll('.boss-encounter-btn');
+        bossButtons.forEach(button => {
+            if (!button.disabled) {
+                button.addEventListener('click', () => {
+                    const stageId = parseInt(button.dataset.stageId);
+                    this.startBossEncounter(stageId);
+                });
+            }
+        });
     }
 
     startBossEncounter(stageId) {

@@ -56,9 +56,9 @@ class CombatManager {
     getEffectivePlayerStats() {
         const basePlayer = this.stateManager.getStateValue('player');
         
-        // Defensive check - ensure player has valid stats
-        if (!basePlayer || typeof basePlayer.attack !== 'number' || typeof basePlayer.defense !== 'number') {
-            console.warn('Player stats not ready, using defaults');
+        // Ensure player exists with fallback values
+        if (!basePlayer) {
+            console.warn('Player stats not found, using defaults');
             return {
                 hp: 100,
                 maxHp: 100,
@@ -69,6 +69,17 @@ class CombatManager {
                 criticalChance: 0
             };
         }
+        
+        // Ensure numeric values with defaults
+        const safePlayer = {
+            hp: Number(basePlayer.hp) || 100,
+            maxHp: Number(basePlayer.maxHp) || 100,
+            level: Number(basePlayer.level) || 1,
+            exp: Number(basePlayer.exp) || 0,
+            attack: Number(basePlayer.attack) || 10,
+            defense: Number(basePlayer.defense) || 5,
+            criticalChance: Number(basePlayer.criticalChance) || 0
+        };
         
         // Get prestige bonuses if available
         let prestigeBonuses = {
@@ -91,11 +102,11 @@ class CombatManager {
         
         // Apply prestige bonuses
         return {
-            ...basePlayer,
-            attack: Math.floor(basePlayer.attack * prestigeBonuses.damageMultiplier),
-            defense: Math.floor(basePlayer.defense * prestigeBonuses.defenseMultiplier),
-            maxHp: Math.floor(basePlayer.maxHp * prestigeBonuses.healthMultiplier),
-            criticalChance: prestigeBonuses.criticalChanceBonus
+            ...safePlayer,
+            attack: Math.floor(safePlayer.attack * prestigeBonuses.damageMultiplier),
+            defense: Math.floor(safePlayer.defense * prestigeBonuses.defenseMultiplier),
+            maxHp: Math.floor(safePlayer.maxHp * prestigeBonuses.healthMultiplier),
+            criticalChance: safePlayer.criticalChance + prestigeBonuses.criticalChanceBonus
         };
     }
     
@@ -331,6 +342,7 @@ class CombatManager {
                 window.gameEngine.bossManager.updateBossPhase();
             }
         } else {
+            console.log(`Enemy stats: attack=${this.currentEnemy.attack}, vs player defense=${effectivePlayer.defense}`);
             damage = this.calculateDamage(this.currentEnemy.attack, effectivePlayer.defense);
         }
         
@@ -345,6 +357,9 @@ class CombatManager {
         // Apply damage to player
         const basePlayer = this.stateManager.getStateValue('player');
         const newHp = Math.max(0, basePlayer.hp - damage);
+        
+        console.log(`👹 Enemy deals ${damage} damage! Player HP: ${basePlayer.hp} -> ${newHp}`);
+        
         this.stateManager.updateState({
             player: { hp: newHp }
         });
@@ -391,6 +406,11 @@ class CombatManager {
      * @returns {number} Calculated damage
      */
     calculateDamage(attack, defense, criticalChance = 0) {
+        // Validate inputs to prevent NaN damage
+        attack = Number(attack) || 10;
+        defense = Number(defense) || 0;
+        criticalChance = Number(criticalChance) || 0;
+        
         // Basic damage formula: attack - defense/2 + random variance
         const baseDamage = Math.max(1, attack - Math.floor(defense / 2));
         const variance = Math.floor(baseDamage * 0.2); // 20% variance

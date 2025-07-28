@@ -424,18 +424,26 @@ class VisualRenderer {
      */
     drawLightningEffect(x, y, progress) {
         this.ctx.strokeStyle = `rgba(255, 255, 0, ${1 - progress})`;
-        this.ctx.lineWidth = 2 + progress * 4;
+        this.ctx.lineWidth = 2 + progress * 3;
         
-        for (let i = 0; i < 3; i++) {
+        // Draw a single central lightning bolt instead of 3
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, y - 80);
+        
+        // Create a more realistic single lightning bolt
+        for (let j = 0; j < 6; j++) {
+            const offsetX = (Math.random() - 0.5) * 30;
+            const offsetY = j * 15 + (Math.random() - 0.5) * 8;
+            this.ctx.lineTo(x + offsetX, y - 80 + offsetY);
+        }
+        
+        this.ctx.stroke();
+        
+        // Add a subtle secondary branch occasionally
+        if (Math.random() < 0.3) {
             this.ctx.beginPath();
-            this.ctx.moveTo(x - 50 + i * 50, y - 100);
-            
-            for (let j = 0; j < 5; j++) {
-                const offsetX = (Math.random() - 0.5) * 20;
-                const offsetY = j * 20 + (Math.random() - 0.5) * 10;
-                this.ctx.lineTo(x - 50 + i * 50 + offsetX, y - 100 + offsetY);
-            }
-            
+            this.ctx.moveTo(x + (Math.random() - 0.5) * 20, y - 40);
+            this.ctx.lineTo(x + (Math.random() - 0.5) * 40, y - 10);
             this.ctx.stroke();
         }
     }

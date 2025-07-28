@@ -90,7 +90,7 @@ button:disabled {
 
 /* Crafting UI */
 #crafting-ui {
-    position: absolute;
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -102,7 +102,8 @@ button:disabled {
     max-height: 80vh;
     overflow-y: auto;
     pointer-events: auto;
-    z-index: 100;
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
 }
 
 #crafting-ui h3 {
@@ -190,22 +191,48 @@ button:disabled {
     }
 }
 
+/* Game UI panels - common styles */
+#equipment-ui, #stages-ui, #prestige-ui, #boss-ui {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.95);
+    border: 2px solid #444;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    pointer-events: auto;
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+}
+
+#equipment-ui h3, #stages-ui h3, #prestige-ui h3, #boss-ui h3 {
+    color: #ffd43b;
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
 /* Daily Challenges UI */
 #challenges-ui {
-    position: absolute;
+    position: fixed;
     top: 10%;
     left: 50%;
     transform: translateX(-50%);
     background-color: rgba(0, 0, 0, 0.95);
-    border: 1px solid #666;
+    border: 2px solid #666;
     border-radius: 10px;
     padding: 20px;
     width: 500px;
     max-width: 90vw;
     max-height: 80vh;
     overflow-y: auto;
-    z-index: 100;
+    z-index: 1000;
     pointer-events: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
 }
 
 #challenge-stats {
